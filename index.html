@@ -268,16 +268,24 @@ function sessionsFor(exId){const p=prof();const out=[];
  if(p.hist)S.hist.forEach(h=>h.ex.forEach(e=>{if(mapName(e.name)===exId){const ws=e.sets.map(s=>num(s.w)).filter(x=>x!=null);if(ws.length)out.push({date:h.date,top:Math.max(...ws),sets:e.sets,src:"hist"})}}));
  S.workouts.filter(w=>w.profile===p.id).forEach(w=>w.ex.forEach(e=>{if(e.id===exId){const done=e.sets.filter(s=>s.st!=="plan"&&num(s.w)!=null);if(done.length)out.push({date:w.date,top:Math.max(...done.map(s=>num(s.w))),sets:done,src:"app",fails:e.sets.filter(s=>s.st==="fail").length,ok:e.sets.filter(s=>s.st==="done").length})}}));
  return out.sort((a,b)=>a.date.localeCompare(b.date))}
+function lastOf(id){const app=S.workouts.filter(w=>w.profile===prof().id&&w.id!==(S.cur&&S.cur.id)).sort((a,b)=>b.date.localeCompare(a.date));
+ for(const w of app){const e=w.ex.find(x=>x.id===id);if(e&&e.sets.some(s=>s.st!=="plan"))return{w,e}}return null}
+function lastText(id){const l=lastOf(id);if(!l)return"";const d=l.w.date.slice(8,10)+"."+l.w.date.slice(5,7);
+ return"Прошлый раз "+d+": "+l.e.sets.filter(s=>s.st!=="plan").map(s=>(s.w||"—")+"×"+(s.r||0)+(s.st==="fail"?"✗":"")).join(", ")}
 function suggest(spec){const[id,sets,lo,hi,start,inc]=spec;
  const app=S.workouts.filter(w=>w.profile===prof().id&&w.id!==(S.cur&&S.cur.id)).sort((a,b)=>b.date.localeCompare(a.date));
- const hist=[];for(const w of app){const e=w.ex.find(x=>x.id===id);if(e)hist.push(e);if(hist.length>=2)break}
+ const hist=[];for(const w of app){const e=w.ex.find(x=>x.id===id);if(e&&e.sets.some(s=>s.st!=="plan"))hist.push(e);if(hist.length>=2)break}
  if(!hist.length)return{w:start,why:"стартовый вес"};
- const last=hist[0];const ws=last.sets.filter(s=>s.st!=="plan");const w=num((ws[0]||last.sets[0]).w)??start;
+ const last=hist[0];const ws=last.sets.filter(s=>s.st!=="plan");const done=ws.filter(s=>s.st==="done");
+ const w=Math.max(...(done.length?done:ws).map(s=>num(s.w)??0))||start;
  const allTop=ws.length>=sets&&ws.every(s=>s.st==="done"&&num(s.r)>=hi);
+ const wayOver=allTop&&ws.every(s=>num(s.r)>=hi+3);
  const missLo=e=>e.sets.some(s=>s.st==="fail"||(s.st==="done"&&num(s.r)<lo));
+ if(wayOver&&inc)return{w:+(w+2*inc).toFixed(2),why:`+${2*inc} кг: перевыполнил — ${hi+3}+ повторов во всех подходах`};
  if(allTop&&inc)return{w:+(w+inc).toFixed(2),why:`+${inc} кг: в прошлый раз ${hi} во всех подходах`};
- if(hist.length>=2&&missLo(hist[0])&&missLo(hist[1]))return{w:+(w*0.9).toFixed(1),why:"−10%: дважды не добрал повторы"};
- return{w,why:"повторить и добавить повторы"}}
+ if(hist.length>=2&&missLo(hist[0])&&missLo(hist[1]))return{w:+(w*0.9).toFixed(1),why:"−10%: дважды подряд не добрал повторы"};
+ if(missLo(hist[0]))return{w,why:"в прошлый раз не добрал — тот же вес, добери повторы"};
+ return{w,why:"тот же вес, добавь повторы"}}
 /* ===================== Экран: тренировка ===================== */
 function newWorkout(dayIdx){const P=PROGRAMS[S.settings.program];const d=P.days[dayIdx];
  const w={id:"w"+Date.now().toString(36),profile:prof().id,date:today(),gym:S.settings.gyms[0]||"",program:S.settings.program,day:dayIdx,title:d.n,ex:d.ex.map(spec=>{const sg=suggest(spec);return{id:spec[0],spec,comment:"",why:sg.why,sets:Array.from({length:spec[1]},()=>({pw:sg.w,pr:spec[3],w:sg.w,r:"",st:"plan"}))}})};
@@ -311,7 +319,7 @@ function rToday(){$("#ttl").textContent="Тренировка";const P=PROGRAMS[
  w.ex.forEach((e,ei)=>{const L=LIB[e.id]||{n:e.id,m:[]};
   h+=`<div class="card"><div class="ex-h"><div class="t">${esc(L.n)}<div class="chips" style="margin-top:4px">${L.m.map(k=>`<span class="mchip">${M[k]}</span>`).join("")}</div></div>
   <button class="sm" data-info="${ei}">ⓘ</button><button class="sm" data-swap="${ei}">⇄</button></div>
-  ${e.spec?`<div class="plan" style="margin-top:6px">План: ${e.spec[1]} × ${e.spec[2]}–${e.spec[3]} · ${esc(e.why||"")}</div>`:""}
+  ${e.spec?`<div class="plan" style="margin-top:6px">План: ${e.spec[1]} × ${e.spec[2]}–${e.spec[3]} · ${esc(e.why||"")}</div>`:""}${lastText(e.id)?`<div class="plan" style="margin-top:2px;opacity:.8">${esc(lastText(e.id))}</div>`:""}
   ${e.sets.map((s,si)=>`<div class="set ${s.st==="done"?"done":s.st==="fail"?"fail":""}"><div class="n">${si+1}</div>
    <div><div class="lbl">кг (план ${s.pw??"–"})</div><input inputmode="decimal" data-w="${ei}_${si}" value="${s.w??""}"></div>
    <div><div class="lbl">повт. (цель ${s.pr??"–"})</div><input inputmode="numeric" data-r="${ei}_${si}" value="${s.r??""}" placeholder="${s.pr??""}"></div>
