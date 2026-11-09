@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Дневник тренировок</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f1115">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#0f1115;--card:#181b22;--card2:#20242d;--line:#2b303b;--tx:#e8eaf0;--mut:#8b93a5;--acc:#f59e0b;--blue:#2563eb;--red:#dc2626;--green:#16a34a;--r:14px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 -apple-system,Segoe UI,Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;background:rgba(15,17,21,.96);backdrop-filter:blur(6px);padding:10px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+header h1{font-size:17px;margin:0;flex:1}
+select,input,textarea,button{font:inherit;color:inherit}
+select,input,textarea{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;width:100%}
+textarea{min-height:56px;resize:vertical}
+button{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;cursor:pointer}
+button.pri{background:var(--acc);color:#111;border-color:var(--acc);font-weight:600}
+button.sm{padding:5px 9px;font-size:13px}
+main{padding:12px 12px 90px;max-width:640px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:12px}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1}
+.mut{color:var(--mut);font-size:13px}
+.h2{font-size:16px;font-weight:700;margin:4px 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:4px 10px;border-radius:999px;background:var(--card2);border:1px solid var(--line);font-size:13px}
+.chip.on{background:var(--acc);color:#111;border-color:var(--acc)}
+.mchip{font-size:11px;padding:2px 7px;border-radius:999px;background:#2a2f3a;color:#c9cfdb}
+nav{position:fixed;bottom:0;left:0;right:0;background:#12151b;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;border-radius:0;background:none;padding:10px 0 12px;font-size:12px;color:var(--mut)}
+nav button b{display:block;font-size:19px;line-height:1.2}
+nav button.on{color:var(--acc)}
+.ex-h{display:flex;align-items:flex-start;gap:8px}
+.ex-h .t{flex:1;font-weight:600}
+.set{display:grid;grid-template-columns:26px 1fr 1fr 44px 44px;gap:6px;align-items:center;margin:6px 0;padding:6px;border-radius:10px;border:1px solid var(--line);background:var(--card2)}
+.set.done{border-color:var(--blue);background:rgba(37,99,235,.18)}
+.set.fail{border-color:var(--red);background:rgba(220,38,38,.18)}
+.set .n{color:var(--mut);text-align:center;font-size:13px}
+.set input{padding:8px 6px;text-align:center}
+.set .lbl{font-size:10px;color:var(--mut);text-align:center;margin-bottom:2px}
+.ok,.no{height:40px;padding:0;font-size:18px}
+.ok.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.no.on{background:var(--red);border-color:var(--red);color:#fff}
+.plan{font-size:12px;color:var(--mut)}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20;display:flex;align-items:flex-end}
+.sheet>div{background:var(--card);width:100%;max-height:88vh;overflow:auto;border-radius:18px 18px 0 0;padding:14px 14px 28px;max-width:640px;margin:0 auto}
+.banner{background:#3b2a0b;border:1px solid #6b4b12;color:#fcd38a;padding:8px 10px;border-radius:10px;font-size:13px;margin-bottom:10px}
+.hist{border-left:3px solid #4b5262}
+.hist.app{border-left-color:var(--acc)}
+.list-i{padding:10px 0;border-bottom:1px solid var(--line)}
+.list-i:last-child{border-bottom:0}
+.tag{font-size:11px;padding:1px 6px;border-radius:6px;background:#2a2f3a;color:#aab}
+.ana p{margin:6px 0}
+.ana .warn{color:#fca5a5}.ana .good{color:#86efac}
+svg text{fill:var(--mut);font-size:10px}
+.figs{display:flex;gap:8px;justify-content:center}
+.figs>div{flex:1;text-align:center;background:var(--card2);border-radius:12px;padding:6px}
+.ph{width:100%;border-radius:10px;display:block}
+.status{font-size:12px;color:var(--mut)}
+</style>
+</head>
+<body>
+<header><h1 id="ttl">Дневник</h1><select id="profSel" style="width:auto;max-width:42%"></select></header>
+<main id="app"><div class="card mut">Загрузка…</div></main>
+<nav id="nav"></nav>
+<div id="sheetRoot"></div>
+<script>
+/* ===================== Справочник упражнений ===================== */
+const M={chest:"Грудь",fdelt:"Передняя дельта",sdelt:"Средняя дельта",rdelt:"Задняя дельта",biceps:"Бицепс",triceps:"Трицепс",forearm:"Предплечья",abs:"Пресс",lats:"Широчайшие",traps:"Трапеции",midback:"Середина спины",lowback:"Поясница",glutes:"Ягодицы",quads:"Квадрицепс",hams:"Бицепс бедра",calves:"Икры"};
+const LIB={
+ bench:{n:"Жим штанги лёжа",m:["chest","fdelt","triceps"],t:["Лопатки сведены и опущены, лёгкий прогиб, стопы в пол.","Опускай гриф на низ груди, локти ~45° к корпусу.","Жми вверх и чуть к лицу, не отрывая таз."],alt:["db_bench","machine_chest","incline_db"]},
+ db_bench:{n:"Жим гантелей лёжа",m:["chest","fdelt","triceps"],t:["Гантели над грудью, лопатки сведены.","Опускай до растяжения груди, локти ~45°.","Выжимай, сводя гантели над грудью."],alt:["bench","machine_chest"]},
+ incline_db:{n:"Жим гантелей на наклонной",m:["chest","fdelt","triceps"],t:["Скамья 30°, лопатки сведены.","Опускай гантели к верху груди.","Жми вверх, не стукая гантели."],alt:["incline_bb","machine_chest"]},
+ incline_bb:{n:"Жим штанги на наклонной",m:["chest","fdelt","triceps"],t:["Скамья 30°, хват чуть шире плеч.","Гриф к верху груди.","Жми вертикально вверх."],alt:["incline_db"]},
+ machine_chest:{n:"Жим в тренажёре на грудь",m:["chest","triceps"],t:["Рукояти на уровне середины груди.","Подконтрольно назад до растяжения.","Жим без блокировки локтей."],alt:["bench","db_bench"]},
+ fly:{n:"Разведения на наклонной / кроссовер",m:["chest"],t:["Локти слегка согнуты и зафиксированы.","Разводи до растяжения груди.","Своди по дуге, пауза в сокращении."],alt:["pec_deck","cable_fly"]},
+ pec_deck:{n:"Бабочка (пек-дек)",m:["chest"],t:["Рукояти на уровне груди.","Своди до касания, пауза 1 с.","Медленно назад."],alt:["fly","cable_fly"]},
+ cable_fly:{n:"Сведение в кроссовере",m:["chest"],t:["Шаг вперёд, корпус чуть наклонён.","Своди руки перед собой по дуге.","Возврат до растяжения."],alt:["fly","pec_deck"]},
+ ohp_machine:{n:"Жим в тренажёре на плечи",m:["fdelt","sdelt","triceps"],t:["Спина прижата, рукояти у плеч.","Жми вверх без рывка.","Опускай до уровня ушей."],alt:["db_ohp","bb_ohp"]},
+ db_ohp:{n:"Жим гантелей сидя",m:["fdelt","sdelt","triceps"],t:["Спинка вертикально, гантели у плеч.","Жми вверх по дуге.","Опускай до ушей."],alt:["ohp_machine","bb_ohp"]},
+ bb_ohp:{n:"Жим штанги стоя",m:["fdelt","sdelt","triceps","abs"],t:["Пресс и ягодицы напряжены.","Гриф от ключиц вверх, голова уходит под гриф.","Без прогиба в пояснице."],alt:["db_ohp","ohp_machine"]},
+ lat_raise:{n:"Махи гантелями в стороны",m:["sdelt"],t:["Лёгкий наклон вперёд, локти чуть согнуты.","Поднимай до уровня плеч локтями вперёд.","Медленно вниз, без раскачки."],alt:["cable_lat","machine_lat"]},
+ cable_lat:{n:"Махи в кроссовере одной рукой",m:["sdelt"],t:["Трос снизу за спиной.","Поднимай руку в сторону до плеча.","Подконтрольно вниз."],alt:["lat_raise"]},
+ machine_lat:{n:"Махи в тренажёре",m:["sdelt"],t:["Плечи на уровне оси тренажёра.","Поднимай до горизонтали.","Медленно вниз."],alt:["lat_raise"]},
+ rear_delt:{n:"Задняя дельта в тренажёре",m:["rdelt","traps"],t:["Грудью к спинке, руки прямые.","Разводи назад, не сводя лопатки сильно.","Пауза, медленно назад."],alt:["face_pull","rear_db"]},
+ face_pull:{n:"Тяга каната к лицу",m:["rdelt","traps"],t:["Канат на уровне лица.","Тяни к глазам, локти в стороны.","Разводи концы каната."],alt:["rear_delt"]},
+ rear_db:{n:"Разведения в наклоне",m:["rdelt"],t:["Наклон почти параллельно полу.","Разводи гантели в стороны.","Без рывка корпусом."],alt:["rear_delt","face_pull"]},
+ shrug:{n:"Шраги с лямками",m:["traps"],t:["Штанга/гантели в опущенных руках.","Плечи строго вверх к ушам.","Пауза 1 с, вниз."],alt:["shrug_db"]},
+ shrug_db:{n:"Шраги с гантелями",m:["traps"],t:["Гантели по бокам.","Плечи вверх.","Без вращения."],alt:["shrug"]},
+ pullup:{n:"Подтягивания широким хватом",m:["lats","biceps","midback"],t:["Хват шире плеч, плечи опущены.","Тянись грудью к перекладине.","Опускайся до прямых рук."],alt:["lat_pulldown","pullup_w"]},
+ pullup_w:{n:"Подтягивания с весом",m:["lats","biceps","midback"],t:["Вес на поясе, хват чуть шире плеч.","Подбородок над перекладиной.","Полная амплитуда вниз."],alt:["pullup","lat_pulldown"]},
+ lat_pulldown:{n:"Тяга верхнего блока к груди",m:["lats","biceps"],t:["Бёдра зафиксированы, корпус чуть назад.","Тяни к верху груди локтями вниз.","Плавно вверх до растяжения."],alt:["pullup","close_pulldown"]},
+ close_pulldown:{n:"Тяга блока к груди узким хватом",m:["lats","midback","biceps"],t:["Узкая/параллельная рукоять.","Тяни к низу груди.","Растяжение наверху."],alt:["lat_pulldown"]},
+ plate_row:{n:"Гребля в тренажёре с блинами",m:["midback","lats","rdelt","biceps"],t:["Грудь к упору.","Тяни локти назад к поясу.","Пауза, медленно вперёд."],alt:["cable_row","db_row","bb_row"]},
+ cable_row:{n:"Тяга нижнего блока сидя",m:["midback","lats","biceps"],t:["Спина ровная, колени чуть согнуты.","Тяни к поясу, сведи лопатки.","Вперёд до растяжения без округления."],alt:["plate_row","db_row"]},
+ db_row:{n:"Тяга гантели в наклоне",m:["lats","midback","biceps"],t:["Упор коленом и рукой в скамью.","Тяни гантель к поясу.","Опускай до растяжения."],alt:["plate_row","cable_row"]},
+ bb_row:{n:"Тяга штанги в наклоне",m:["midback","lats","rdelt","lowback"],t:["Наклон ~45°, спина ровная.","Тяни гриф к низу живота.","Без рывка корпусом."],alt:["plate_row","db_row"]},
+ hyper:{n:"Гиперэкстензия",m:["lowback","glutes","hams"],t:["Валик под тазом.","Опускайся с ровной спиной.","Поднимайся до прямой линии."],alt:["rdl"]},
+ bb_curl:{n:"Подъём штанги на бицепс",m:["biceps","forearm"],t:["Локти прижаты к корпусу.","Поднимай без раскачки.","Медленно вниз до прямых рук."],alt:["db_curl","machine_curl","cable_curl"]},
+ db_curl:{n:"Подъём гантелей на бицепс сидя",m:["biceps"],t:["Спинка наклонена назад.","Супинируй кисть при подъёме.","Полная амплитуда."],alt:["bb_curl","machine_curl"]},
+ hammer:{n:"Молотки",m:["biceps","forearm"],t:["Нейтральный хват.","Поднимай к плечу.","Без раскачки."],alt:["db_curl","rope_hammer"]},
+ rope_hammer:{n:"Молотки на блоке с канатом",m:["biceps","forearm"],t:["Канат снизу.","Тяни к плечам, локти неподвижны.","Медленно вниз."],alt:["hammer"]},
+ machine_curl:{n:"Сгибания в тренажёре на бицепс",m:["biceps"],t:["Локти на подушке, ось у локтя.","Сгибай до пика.","Медленно разгибай."],alt:["bb_curl","cable_curl"]},
+ cable_curl:{n:"Сгибания на блоке",m:["biceps"],t:["Трос снизу, прямая рукоять.","Сгибай, локти неподвижны.","Пауза вверху."],alt:["machine_curl","bb_curl"]},
+ pushdown:{n:"Разгибания на блоке (палка)",m:["triceps"],t:["Локти прижаты.","Разгибай до конца вниз.","Медленно вверх до 90°."],alt:["rope_pushdown","skull"]},
+ rope_pushdown:{n:"Разгибания на блоке с канатом",m:["triceps"],t:["Локти прижаты.","Разводи канат внизу.","Подконтрольно вверх."],alt:["pushdown"]},
+ overhead_tri:{n:"Трицепс из-за головы (канат)",m:["triceps"],t:["Спиной к блоку, канат за головой.","Разгибай вперёд-вверх.","Растяжение за головой."],alt:["skull","pushdown"]},
+ skull:{n:"Французский жим",m:["triceps"],t:["Лёжа, гриф над лбом.","Сгибай только в локтях.","Разгибай до прямых рук."],alt:["overhead_tri","pushdown"]},
+ squat:{n:"Присед со штангой",m:["quads","glutes","lowback"],t:["Гриф на трапециях, стопы на ширине плеч.","Садись до параллели, колени по носкам.","Вставай, не заваливая корпус."],alt:["hack","leg_press","goblet"]},
+ hack:{n:"Гакк-присед",m:["quads","glutes"],t:["Спина к упору, стопы на середине платформы.","Глубоко вниз.","Вверх без блокировки колен."],alt:["squat","leg_press"]},
+ goblet:{n:"Гоблет-присед",m:["quads","glutes"],t:["Гантель у груди.","Глубокий присед, спина прямая.","Вверх через пятки."],alt:["squat"]},
+ leg_press:{n:"Жим платформы",m:["quads","glutes"],t:["Стопы на ширине плеч по центру.","Опускай до 90° в колене, таз не отрывать.","Жми без блокировки колен."],alt:["hack","squat"]},
+ rdl:{n:"Румынская тяга",m:["hams","glutes","lowback"],t:["Колени чуть согнуты.","Таз назад, гриф скользит по бёдрам.","До растяжения бицепса бедра, вверх."],alt:["leg_curl","hyper"]},
+ deadlift:{n:"Становая тяга",m:["hams","glutes","lowback","traps","quads"],t:["Гриф над серединой стопы, спина ровная.","Толкай пол ногами, гриф у ног.","Выпрямись полностью, без переразгибания."],alt:["rdl","trap_dl"]},
+ trap_dl:{n:"Тяга с трэп-грифом",m:["quads","glutes","hams","traps"],t:["Встань в центр грифа.","Спина ровная, тяни ногами.","Выпрямись, плечи назад."],alt:["deadlift"]},
+ lunge:{n:"Выпады / болгарские приседания",m:["quads","glutes"],t:["Задняя нога на скамье.","Опускайся вертикально.","Толчок передней ногой."],alt:["leg_press","goblet"]},
+ leg_ext:{n:"Разгибание ног",m:["quads"],t:["Ось тренажёра у колена.","Разгибай до конца, пауза.","Медленно вниз."],alt:["lunge"]},
+ leg_curl:{n:"Сгибание ног",m:["hams"],t:["Ось у колена, валик над пяткой.","Сгибай до упора.","Медленно разгибай."],alt:["rdl"]},
+ calf_stand:{n:"Икры стоя",m:["calves"],t:["Носки на краю, пятки вниз до растяжения.","Вверх на носки, пауза.","Медленно вниз."],alt:["calf_seat","calf_press"]},
+ calf_seat:{n:"Икры сидя",m:["calves"],t:["Валик на бёдрах.","Полная амплитуда.","Пауза вверху и внизу."],alt:["calf_stand"]},
+ calf_press:{n:"Икры в жиме платформы",m:["calves"],t:["Носки на краю платформы.","Толкай носками.","Растяжение внизу."],alt:["calf_stand"]},
+ hang_raise:{n:"Подъём ног в висе",m:["abs"],t:["Вис на перекладине.","Поднимай ноги, подкручивая таз.","Без раскачки."],alt:["crunch"]},
+ crunch:{n:"Скручивания",m:["abs"],t:["Лёжа, поясница прижата.","Скручивайся к тазу.","Медленно вниз."],alt:["hang_raise","cable_crunch"]},
+ cable_crunch:{n:"Скручивания на блоке",m:["abs"],t:["На коленях, канат у головы.","Скручивайся вниз.","Без участия рук."],alt:["crunch"]}
+};
+/* ===================== Программы ===================== */
+const PROGRAMS={
+ ulppl5:{n:"ULPPL — 5 дней (масса/рельеф)",days:[
+  {n:"1. Верх — сила",ex:[["bench",4,5,8,100,2.5],["plate_row",4,6,10,55,2.5],["ohp_machine",3,6,10,55,2.5],["pullup_w",3,6,10,15,2.5],["pushdown",2,8,12,43,2.5],["bb_curl",2,6,10,50,2.5]]},
+  {n:"2. Низ — сила",ex:[["squat",4,6,8,60,5],["rdl",3,8,10,60,5],["leg_press",3,10,12,80,5],["leg_curl",3,10,12,41,2.5],["calf_stand",4,10,15,40,5],["hang_raise",3,15,15,0,0]]},
+  {n:"3. Толкаю — объём",ex:[["incline_db",4,8,12,40,2.5],["bench",3,8,12,85,2.5],["fly",3,12,15,20,2.5],["lat_raise",4,12,20,12.5,1.25],["pushdown",3,10,15,25,2.5],["overhead_tri",2,12,15,15,2.5]]},
+  {n:"4. Тяну — объём",ex:[["pullup",4,8,15,0,0],["close_pulldown",3,10,12,33.75,2.5],["plate_row",3,10,12,45,2.5],["rear_delt",3,12,15,73,2.5],["shrug",3,10,15,45,2.5],["bb_curl",3,8,12,42.5,2.5],["hammer",2,10,12,17.5,1.25]]},
+  {n:"5. Ноги — объём",ex:[["deadlift",3,5,8,70,5],["lunge",3,8,10,10,2.5],["leg_ext",3,12,15,32,2.5],["leg_curl",3,12,15,36,2.5],["calf_seat",4,15,20,30,5],["hyper",3,12,15,0,0]]}
+ ]},
+ old4:{n:"Старый сплит (грудь/спина/плечи/бицепс)",days:[
+  {n:"Грудь",ex:[["incline_db",4,8,12,42.5,2.5],["bench",3,8,12,90,2.5],["fly",3,10,12,22.5,2.5],["pushdown",3,10,12,25,2.5]]},
+  {n:"Спина",ex:[["pullup",5,8,15,0,0],["close_pulldown",3,10,12,33.75,2.5],["plate_row",3,10,12,45,2.5],["hyper",4,12,15,0,0]]},
+  {n:"Плечи",ex:[["lat_raise",4,10,12,14,1.25],["db_ohp",4,8,12,32.5,2.5],["rear_delt",3,12,15,50,2.5],["shrug",3,12,15,45,2.5]]},
+  {n:"Бицепс",ex:[["bb_curl",4,10,12,45,2.5],["db_curl",3,10,12,14,1.25],["machine_curl",3,10,12,50,2.5],["cable_curl",3,10,12,23.5,2.5]]}
+ ]}
+};
+const TAGS=["креатин","болел","плохо спал","алкоголь","поел поздно","стресс","перерыв","дефицит"];
+/* ===== Сопоставление названий из заметок с упражнениями ===== */
+function mapName(s){s=(s||"").toLowerCase();
+ const has=(...w)=>w.every(x=>s.includes(x));
+ if(has("подъем ног")||has("подьем ног")||has("подъём ног"))return "hang_raise";
+ if(s.includes("скруч")||s.includes("пресс"))return "crunch";
+ if(has("жим")&&(s.includes("наклон"))&&s.includes("гант"))return "incline_db";
+ if(has("жим")&&(s.includes("штанг")||s.includes("горизонт")))return "bench";
+ if(s.includes("развод")||s.includes("разведен")){ if(s.includes("сторон")||s.includes("стоя"))return "lat_raise"; return "fly";}
+ if(has("жим")&&s.includes("плеч"))return s.includes("тренаж")?"ohp_machine":"db_ohp";
+ if(s.includes("подтяг"))return "pullup";
+ if(s.includes("тяга")&&(s.includes("голов")||s.includes("груди")))return "close_pulldown";
+ if(s.includes("гребл")||s.includes("блины"))return "plate_row";
+ if(s.includes("гипер"))return "hyper";
+ if(s.includes("станов"))return "deadlift";
+ if(s.includes("трапец")||s.includes("шраг"))return "shrug";
+ if(s.includes("задн")||s.includes("пучок"))return "rear_delt";
+ if(s.includes("протяжк")||s.includes("тяга штанги вверх"))return "upright";
+ if(s.includes("молот"))return "hammer";
+ if(s.includes("бицепс")&&(s.includes("штанг")||s.includes("гриф")))return "bb_curl";
+ if(s.includes("бицепс")&&s.includes("сидя")&&!s.includes("тренаж"))return "db_curl";
+ if(s.includes("бицепс")||s.includes("сидя тренажер"))return "machine_curl";
+ if(s.includes("кроссовер")&&!s.includes("пучок"))return "cable_curl";
+ if(s.includes("трицеп")||s.includes("трос")||s.includes("палка"))return "pushdown";
+ if(s.includes("вперёд")||s.includes("вперед"))return "front_raise";
+ if(s.includes("присед"))return "squat";
+ if(s.includes("платформ"))return "leg_press";
+ return null;}
+LIB.upright={n:"Тяга штанги к подбородку / протяжка",m:["sdelt","traps"],t:["Хват на ширине плеч.","Тяни локтями вверх до груди.","Медленно вниз."],alt:["lat_raise"]};
+LIB.front_raise={n:"Подъём гантели вперёд",m:["fdelt"],t:["Руки чуть согнуты.","Поднимай до уровня глаз.","Медленно вниз."],alt:["lat_raise"]};
+/* ===================== Локальное хранилище (IndexedDB) ===================== */
+const LDB=(()=>{let dbp=null;const open=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open("gymdiary",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
+ const tx=async(mode,fn)=>{const d=await open();return new Promise((res,rej)=>{const t=d.transaction("kv",mode);const st=t.objectStore("kv");const out=fn(st);t.oncomplete=()=>res(out&&out.result!==undefined?out.result:out);t.onerror=()=>rej(t.error)})};
+ const doc=path=>({path,get:async()=>{const v=await tx("readonly",s=>s.get(path));return{id:path.split("/").pop(),exists:v!==undefined,data:()=>v}},set:async d=>{await tx("readwrite",s=>s.put(JSON.parse(JSON.stringify(d)),path))},delete:async()=>{await tx("readwrite",s=>s.delete(path))},collection:x=>col(path+"/"+x)});
+ const col=path=>({path,doc:id=>doc(path+"/"+id),get:async()=>{const d=await open();const n=path.split("/").length+1;return new Promise((res,rej)=>{const out=[];const t=d.transaction("kv","readonly");const r=t.objectStore("kv").openCursor(IDBKeyRange.bound(path+"/",path+"/\uffff"));r.onsuccess=()=>{const c=r.result;if(c){if(String(c.key).split("/").length===n){const k=c.key,v=c.value;out.push({id:String(k).split("/").pop(),exists:true,data:()=>v})}c.continue()}else res({docs:out,size:out.length,empty:!out.length})};r.onerror=()=>rej(r.error)})}});
+ return{doc,collection:col,all:async()=>{const d=await open();return new Promise(res=>{const out={};const r=d.transaction("kv","readonly").objectStore("kv").openCursor();r.onsuccess=()=>{const c=r.result;if(c){out[c.key]=c.value;c.continue()}else res(out)}})}}})();
+/* ===================== Состояние ===================== */
+let db=null,user=null,uid=null,ONLINE=false;
+const S={tab:"today",settings:null,workouts:[],metrics:[],hist:[],lib:{},cur:null,progEx:"bench",ana:null};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const fmtD=d=>{const[y,m,dd]=d.split("-");return dd+"."+m+"."+y};
+const num=v=>{const x=parseFloat(String(v).replace(",","."));return isNaN(x)?null:x};
+function defSettings(){return{profiles:[{id:"p1",name:"Роман",height:null,hist:true},{id:"p2",name:"Жена",height:null,hist:false}],active:"p1",gyms:["РП","РБ"],program:"ulppl5",nextDay:{},templates:[]}}
+const prof=()=>S.settings.profiles.find(p=>p.id===S.settings.active)||S.settings.profiles[0];
+/* ===================== Хранилище ===================== */
+async function saveSettings(){if(!ONLINE)return;try{await db.doc("u/"+uid).set(S.settings)}catch(e){toast("Не сохранилось: "+e.code)}}
+const wTimers={};
+function saveWorkout(w){w.updated=Date.now();if(!ONLINE)return;clearTimeout(wTimers[w.id]);wTimers[w.id]=setTimeout(async()=>{try{await db.doc("u/"+uid+"/w/"+w.id).set(JSON.parse(JSON.stringify(w)));setStatus("Сохранено")}catch(e){setStatus("Ошибка сохранения: "+e.code)}},900)}
+async function delWorkout(w){S.workouts=S.workouts.filter(x=>x.id!==w.id);if(ONLINE){try{await db.doc("u/"+uid+"/w/"+w.id).delete()}catch(e){}}}
+async function saveMetric(m){if(!ONLINE){toast("Сохранение недоступно");return}try{await db.doc("u/"+uid+"/m/"+m.profile+"_"+m.date).set(m);toast("Сохранено")}catch(e){toast("Ошибка: "+e.code)}}
+async function loadAll(){
+ try{db=LDB;user={isOwner:()=>true};uid="local"}catch(e){}
+ ONLINE=!!(db&&uid);
+ S.settings=defSettings();
+ if(ONLINE){
+  const timer=setTimeout(()=>{setStatus("Данные пока недоступны, проверь интернет")},10000);
+  try{
+   const s=await db.doc("u/"+uid).get(); if(s.exists)S.settings=Object.assign(defSettings(),JSON.parse(JSON.stringify(s.data()))); else await db.doc("u/"+uid).set(S.settings);
+   const ws=await db.collection("u/"+uid+"/w").get(); S.workouts=ws.docs.map(d=>JSON.parse(JSON.stringify(d.data())));
+   const ms=await db.collection("u/"+uid+"/m").get(); S.metrics=ms.docs.map(d=>JSON.parse(JSON.stringify(d.data())));
+   
+   const ls=await db.collection("lib").get(); ls.docs.forEach(d=>S.lib[d.id]=JSON.parse(JSON.stringify(d.data())));
+  }catch(e){setStatus("Ошибка загрузки: "+(e.code||e))}
+  clearTimeout(timer);
+ }
+ S.hist=[];try{const hs=await db.doc("hist/all").get();if(hs.exists)S.hist=hs.data().items||[]}catch(e){}
+ renderProf();go(location.hash.slice(1)||"today");
+}
+/* ===================== UI-утилиты ===================== */
+let stT;function setStatus(t){const el=$("#st");if(el){el.textContent=t;clearTimeout(stT);stT=setTimeout(()=>{el.textContent=""},2500)}}
+function toast(t){const d=document.createElement("div");d.textContent=t;d.style.cssText="position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#333;color:#fff;padding:8px 14px;border-radius:10px;z-index:50;font-size:14px";document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
+function sheet(html,onMount){const r=$("#sheetRoot");r.innerHTML='<div class="sheet"><div>'+html+'</div></div>';const s=r.firstChild;s.addEventListener("click",e=>{if(e.target===s)closeSheet()});onMount&&onMount(s);}
+function closeSheet(){$("#sheetRoot").innerHTML=""}
+const TABS=[["today","🏋️","Тренировка"],["log","📒","Журнал"],["prog","📈","Прогресс"],["body","❤️","Самочувствие"],["more","⚙️","Ещё"]];
+function renderNav(){$("#nav").innerHTML=TABS.map(t=>`<button class="${S.tab===t[0]?"on":""}" data-t="${t[0]}"><b>${t[1]}</b>${t[2]}</button>`).join("");$("#nav").querySelectorAll("button").forEach(b=>b.onclick=()=>go(b.dataset.t))}
+function renderProf(){const sel=$("#profSel");sel.innerHTML=S.settings.profiles.map(p=>`<option value="${p.id}" ${p.id===S.settings.active?"selected":""}>${esc(p.name)}</option>`).join("");sel.onchange=()=>{S.settings.active=sel.value;S.cur=null;saveSettings();go(S.tab)}}
+function go(t){if(!TABS.find(x=>x[0]===t))t="today";S.tab=t;if(location.hash.slice(1)!==t){try{history.replaceState(null,"","#"+t)}catch(e){}}renderNav();({today:rToday,log:rLog,prog:rProg,body:rBody,more:rMore})[t]();window.scrollTo(0,0)}
+window.addEventListener("hashchange",()=>{const t=location.hash.slice(1);if(t&&t!==S.tab)go(t)});
+/* ===================== SVG: карта мышц ===================== */
+function bodySVG(side,hl){const on=k=>hl.includes(k)?"#f59e0b":"#3a404d";
+ const F=side==="front";
+ const parts=F?[
+  ["ellipse",{cx:50,cy:14,rx:9,ry:11},"head"],
+  ["rect",{x:38,y:25,width:24,height:6,rx:3},"traps"],
+  ["ellipse",{cx:33,cy:36,rx:7,ry:6},"fdelt"],["ellipse",{cx:67,cy:36,rx:7,ry:6},"fdelt"],
+  ["ellipse",{cx:28,cy:40,rx:3.5,ry:6},"sdelt"],["ellipse",{cx:72,cy:40,rx:3.5,ry:6},"sdelt"],
+  ["rect",{x:39,y:33,width:22,height:16,rx:6},"chest"],
+  ["rect",{x:42,y:50,width:16,height:26,rx:5},"abs"],
+  ["rect",{x:25,y:45,width:8,height:20,rx:4},"biceps"],["rect",{x:67,y:45,width:8,height:20,rx:4},"biceps"],
+  ["rect",{x:22,y:66,width:8,height:22,rx:4},"forearm"],["rect",{x:70,y:66,width:8,height:22,rx:4},"forearm"],
+  ["rect",{x:39,y:80,width:10,height:36,rx:5},"quads"],["rect",{x:51,y:80,width:10,height:36,rx:5},"quads"],
+  ["rect",{x:40,y:122,width:8,height:26,rx:4},"calves"],["rect",{x:52,y:122,width:8,height:26,rx:4},"calves"]]
+ :[
+  ["ellipse",{cx:50,cy:14,rx:9,ry:11},"head"],
+  ["path",{d:"M38 26 L62 26 L56 42 L44 42 Z"},"traps"],
+  ["ellipse",{cx:32,cy:37,rx:6,ry:6},"rdelt"],["ellipse",{cx:68,cy:37,rx:6,ry:6},"rdelt"],
+  ["rect",{x:43,y:42,width:14,height:10,rx:3},"midback"],
+  ["path",{d:"M38 40 L44 44 L44 66 L38 60 Z"},"lats"],["path",{d:"M62 40 L56 44 L56 66 L62 60 Z"},"lats"],
+  ["rect",{x:44,y:58,width:12,height:14,rx:3},"lowback"],
+  ["rect",{x:25,y:45,width:8,height:20,rx:4},"triceps"],["rect",{x:67,y:45,width:8,height:20,rx:4},"triceps"],
+  ["rect",{x:22,y:66,width:8,height:22,rx:4},"forearm"],["rect",{x:70,y:66,width:8,height:22,rx:4},"forearm"],
+  ["rect",{x:39,y:73,width:22,height:13,rx:6},"glutes"],
+  ["rect",{x:39,y:88,width:10,height:30,rx:5},"hams"],["rect",{x:51,y:88,width:10,height:30,rx:5},"hams"],
+  ["rect",{x:40,y:122,width:8,height:26,rx:4},"calves"],["rect",{x:52,y:122,width:8,height:26,rx:4},"calves"]];
+ return `<svg viewBox="0 0 100 155" width="100%" style="max-height:200px">${parts.map(([t,a,k])=>`<${t} ${Object.entries(a).map(([x,y])=>`${x}="${y}"`).join(" ")} fill="${k==="head"?"#2b303b":on(k)}"/>`).join("")}<text x="50" y="154" text-anchor="middle">${F?"спереди":"сзади"}</text></svg>`}
+function exSheet(id,onSwap){const e=LIB[id];if(!e)return;const L=S.lib[id]||{};
+ const photos=(L.photos||[]).map(p=>`<img class="ph" src="${p}" style="margin-bottom:8px">`).join("");
+ sheet(`<div class="ex-h"><div class="t" style="font-size:17px">${esc(e.n)}</div><button class="sm" id="cx">✕</button></div>
+ <div class="chips" style="margin:8px 0">${e.m.map(k=>`<span class="mchip">${M[k]}</span>`).join("")}</div>
+ <div class="figs"><div>${bodySVG("front",e.m)}</div><div>${bodySVG("back",e.m)}</div></div>
+ <div class="h2" style="margin-top:12px">Техника</div><ol style="margin:0;padding-left:20px">${e.t.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
+ <div class="h2" style="margin-top:12px">Фото техники</div>${photos||'<div class="mut">Фото пока нет.</div>'}
+ ${user&&user.isOwner&&user.isOwner()?`<label class="mut" style="display:block;margin-top:6px">Добавить фото (до 2): <input type="file" accept="image/*" id="phf"></label>`:""}
+ ${onSwap?`<div class="h2" style="margin-top:12px">Замена</div><div class="chips">${e.alt.filter(a=>LIB[a]).map(a=>`<button class="sm" data-a="${a}">${esc(LIB[a].n)}</button>`).join("")}</div>`:""}`,
+ s=>{s.querySelector("#cx").onclick=closeSheet;s.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{onSwap(b.dataset.a);closeSheet()});
+  const f=s.querySelector("#phf");if(f)f.onchange=async()=>{const file=f.files[0];if(!file)return;const url=await shrink(file);const ph=(L.photos||[]).slice(-1);ph.push(url);S.lib[id]={photos:ph};if(ONLINE){try{await db.doc("lib/"+id).set({photos:ph});toast("Фото сохранено")}catch(e){toast("Не сохранилось: "+e.code)}}exSheet(id,onSwap)}})}
+function shrink(file){return new Promise(res=>{const img=new Image();img.onload=()=>{const k=Math.min(1,480/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=img.width*k;c.height=img.height*k;c.getContext("2d").drawImage(img,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",.7))};img.src=URL.createObjectURL(file)})}
+/* ===================== История и подсказка веса ===================== */
+function sessionsFor(exId){const p=prof();const out=[];
+ if(p.hist)S.hist.forEach(h=>h.ex.forEach(e=>{if(mapName(e.name)===exId){const ws=e.sets.map(s=>num(s.w)).filter(x=>x!=null);if(ws.length)out.push({date:h.date,top:Math.max(...ws),sets:e.sets,src:"hist"})}}));
+ S.workouts.filter(w=>w.profile===p.id).forEach(w=>w.ex.forEach(e=>{if(e.id===exId){const done=e.sets.filter(s=>s.st!=="plan"&&num(s.w)!=null);if(done.length)out.push({date:w.date,top:Math.max(...done.map(s=>num(s.w))),sets:done,src:"app",fails:e.sets.filter(s=>s.st==="fail").length,ok:e.sets.filter(s=>s.st==="done").length})}}));
+ return out.sort((a,b)=>a.date.localeCompare(b.date))}
+function suggest(spec){const[id,sets,lo,hi,start,inc]=spec;
+ const app=S.workouts.filter(w=>w.profile===prof().id&&w.id!==(S.cur&&S.cur.id)).sort((a,b)=>b.date.localeCompare(a.date));
+ const hist=[];for(const w of app){const e=w.ex.find(x=>x.id===id);if(e)hist.push(e);if(hist.length>=2)break}
+ if(!hist.length)return{w:start,why:"стартовый вес"};
+ const last=hist[0];const ws=last.sets.filter(s=>s.st!=="plan");const w=num((ws[0]||last.sets[0]).w)??start;
+ const allTop=ws.length>=sets&&ws.every(s=>s.st==="done"&&num(s.r)>=hi);
+ const missLo=e=>e.sets.some(s=>s.st==="fail"||(s.st==="done"&&num(s.r)<lo));
+ if(allTop&&inc)return{w:+(w+inc).toFixed(2),why:`+${inc} кг: в прошлый раз ${hi} во всех подходах`};
+ if(hist.length>=2&&missLo(hist[0])&&missLo(hist[1]))return{w:+(w*0.9).toFixed(1),why:"−10%: дважды не добрал повторы"};
+ return{w,why:"повторить и добавить повторы"}}
+/* ===================== Экран: тренировка ===================== */
+function newWorkout(dayIdx){const P=PROGRAMS[S.settings.program];const d=P.days[dayIdx];
+ const w={id:"w"+Date.now().toString(36),profile:prof().id,date:today(),gym:S.settings.gyms[0]||"",program:S.settings.program,day:dayIdx,title:d.n,ex:d.ex.map(spec=>{const sg=suggest(spec);return{id:spec[0],spec,comment:"",why:sg.why,sets:Array.from({length:spec[1]},()=>({pw:sg.w,pr:spec[3],w:sg.w,r:"",st:"plan"}))}})};
+ S.workouts.push(w);S.cur=w;S.noAuto=false;S.settings.nextDay[prof().id]=(dayIdx+1)%P.days.length;saveSettings();saveWorkout(w);rToday()}
+function newCustom(tpl){const exs=tpl?tpl.ex.map(t=>{const spec=[t.id,t.sets,t.lo,t.hi,t.w??"",t.inc??2.5];const sg=suggest(spec);return{id:t.id,spec,comment:"",why:sg.why,sets:Array.from({length:t.sets},()=>({pw:sg.w,pr:t.hi,w:sg.w,r:"",st:"plan"}))}}):[];
+ const w={id:"w"+Date.now().toString(36),profile:prof().id,date:today(),gym:S.settings.gyms[0]||"",program:tpl?"tpl":"custom",day:null,tpl:tpl?tpl.id:null,title:tpl?tpl.name:"Своя тренировка",ex:exs};
+ S.workouts.push(w);S.cur=w;S.noAuto=false;saveWorkout(w);rToday();if(!tpl)setTimeout(()=>{const t=document.querySelector("#wt");t&&t.focus()},50)}
+function saveTemplate(w){const st=S.settings;st.templates=st.templates||[];
+ const ex=w.ex.map(e=>{const ws=e.sets.map(s=>num(s.w)).filter(x=>x!=null);const rs=e.sets.map(s=>num(s.r)||num(s.pr)).filter(x=>x);return{id:e.id,sets:e.sets.length,lo:e.spec?e.spec[2]:(rs.length?Math.min(...rs):8),hi:e.spec?e.spec[3]:(rs.length?Math.max(...rs):12),w:ws.length?ws[0]:null,inc:e.spec?e.spec[5]:2.5}});
+ const ex0=st.templates.find(t=>t.name===w.title);if(ex0){ex0.ex=ex}else st.templates.push({id:"t"+Date.now().toString(36),name:w.title,ex});saveSettings();toast("Шаблон «"+w.title+"» сохранён")}
+function rToday(){$("#ttl").textContent="Тренировка";const P=PROGRAMS[S.settings.program];const p=prof();
+ const open=S.workouts.filter(w=>w.profile===p.id&&w.date===today()).sort((a,b)=>b.updated-a.updated)[0];
+ if(!S.cur&&open&&!S.noAuto)S.cur=open;
+ let h=ONLINE?"":`<div class="banner">Хранилище телефона недоступно: данные не сохранятся.</div>`;
+ if(!S.cur||S.cur.profile!==p.id){const nd=(S.settings.nextDay||{})[p.id]||0;
+  const started=S.workouts.filter(w=>w.profile===p.id&&!w.finished).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  if(started.length)h+=`<div class="card"><div class="h2">Незавершённые</div>${started.map(w=>`<button style="width:100%;text-align:left;margin-bottom:8px" data-open="${w.id}">${esc(w.title)}<div class="mut">${fmtD(w.date)}${w.gym?" · "+esc(w.gym):""}</div></button>`).join("")}</div>`;
+  const tpls=S.settings.templates||[];
+  h+=`<div class="card"><div class="h2">Своя тренировка</div><button style="width:100%;margin-bottom:8px" class="pri" id="custom">+ Создать с нуля</button>
+  ${tpls.length?`<div class="mut" style="margin:6px 0">Мои шаблоны</div>`+tpls.map(t=>`<div class="row" style="margin-bottom:8px"><button style="text-align:left;flex:5" data-tpl="${t.id}">${esc(t.name)}<div class="mut">${t.ex.map(e=>LIB[e.id]?LIB[e.id].n:e.id).join(" · ")}</div></button><button class="sm" style="flex:0 0 auto" data-tdel="${t.id}">✕</button></div>`).join(""):`<div class="mut">Собери тренировку и нажми «Сохранить как шаблон» — она появится здесь.</div>`}</div>`;
+  h+=`<div class="card"><div class="h2">Начать тренировку</div><div class="mut" style="margin-bottom:8px">${esc(P.n)}</div>
+  ${P.days.map((d,i)=>`<button style="width:100%;text-align:left;margin-bottom:8px" class="${i===nd?"pri":""}" data-d="${i}">${esc(d.n)}${i===nd?" — следующая":""}<div class="mut" style="color:inherit;opacity:.75">${d.ex.map(e=>LIB[e[0]].n).join(" · ")}</div></button>`).join("")}</div>`;
+  $("#app").innerHTML=h;$("#app").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>newWorkout(+b.dataset.d));$("#app").querySelector("#custom").onclick=()=>newCustom(null);
+  $("#app").querySelectorAll("[data-tpl]").forEach(b=>b.onclick=()=>newCustom((S.settings.templates||[]).find(t=>t.id===b.dataset.tpl)));
+  $("#app").querySelectorAll("[data-tdel]").forEach(b=>b.onclick=()=>{S.settings.templates=S.settings.templates.filter(t=>t.id!==b.dataset.tdel);saveSettings();rToday()});
+  $("#app").querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{S.cur=S.workouts.find(w=>w.id===b.dataset.open);rToday();window.scrollTo(0,0)});return}
+ const w=S.cur;
+ h+=`<div class="card"><div class="ex-h"><button class="sm" id="back">← Назад</button><span id="st" class="status" style="flex:1;text-align:right;align-self:center"></span></div>
+ <input id="wt" value="${esc(w.title)}" placeholder="Название тренировки" style="margin-top:8px;font-weight:600">
+ <div class="row" style="margin-top:8px"><input type="date" id="wd" value="${w.date}"><select id="wg">${S.settings.gyms.map(g=>`<option ${g===w.gym?"selected":""}>${esc(g)}</option>`).join("")}<option value="__new">+ Новый зал…</option></select></div></div>`;
+ w.ex.forEach((e,ei)=>{const L=LIB[e.id]||{n:e.id,m:[]};
+  h+=`<div class="card"><div class="ex-h"><div class="t">${esc(L.n)}<div class="chips" style="margin-top:4px">${L.m.map(k=>`<span class="mchip">${M[k]}</span>`).join("")}</div></div>
+  <button class="sm" data-info="${ei}">ⓘ</button><button class="sm" data-swap="${ei}">⇄</button></div>
+  ${e.spec?`<div class="plan" style="margin-top:6px">План: ${e.spec[1]} × ${e.spec[2]}–${e.spec[3]} · ${esc(e.why||"")}</div>`:""}
+  ${e.sets.map((s,si)=>`<div class="set ${s.st==="done"?"done":s.st==="fail"?"fail":""}"><div class="n">${si+1}</div>
+   <div><div class="lbl">кг (план ${s.pw??"–"})</div><input inputmode="decimal" data-w="${ei}_${si}" value="${s.w??""}"></div>
+   <div><div class="lbl">повт. (цель ${s.pr??"–"})</div><input inputmode="numeric" data-r="${ei}_${si}" value="${s.r??""}" placeholder="${s.pr??""}"></div>
+   <button class="ok ${s.st==="done"?"on":""}" data-ok="${ei}_${si}">✓</button><button class="no ${s.st==="fail"?"on":""}" data-no="${ei}_${si}">✗</button></div>`).join("")}
+  <div class="row" style="margin-top:6px"><button class="sm" data-add="${ei}">+ подход</button><button class="sm" data-rm="${ei}">− подход</button><button class="sm" data-del="${ei}">убрать</button></div>
+  <textarea placeholder="Комментарий к упражнению" data-c="${ei}" style="margin-top:8px">${esc(e.comment)}</textarea></div>`});
+ if(!w.ex.length)h+=`<div class="card mut">Пока нет упражнений. Добавь первое кнопкой ниже.</div>`;
+ h+=`<button style="width:100%;margin-bottom:10px" id="addEx">+ Добавить упражнение</button>
+ <button style="width:100%;margin-bottom:10px" id="saveTpl">☆ Сохранить как шаблон</button>
+ <div class="row"><button class="pri" id="fin">Завершить</button><button id="delW">Удалить</button></div>`;
+ $("#app").innerHTML=h;const A=$("#app");const save=()=>saveWorkout(w);
+ A.querySelector("#back").onclick=()=>{S.cur=null;S.noAuto=true;rToday();window.scrollTo(0,0)};
+ A.querySelector("#wt").oninput=e=>{w.title=e.target.value;save()};
+ A.querySelector("#wd").onchange=e=>{w.date=e.target.value;save()};
+ A.querySelector("#wg").onchange=e=>{if(e.target.value==="__new"){gymDialog(g=>{w.gym=g;save();rToday()});return}w.gym=e.target.value;save()};
+ const ij=k=>k.split("_").map(Number);
+ A.querySelectorAll("[data-w]").forEach(i=>i.oninput=()=>{const[a,b]=ij(i.dataset.w);w.ex[a].sets[b].w=i.value;save()});
+ A.querySelectorAll("[data-r]").forEach(i=>i.oninput=()=>{const[a,b]=ij(i.dataset.r);w.ex[a].sets[b].r=i.value;save()});
+ const mark=(k,st)=>{const[a,b]=ij(k);const s=w.ex[a].sets[b];s.st=s.st===st?"plan":st;if(st==="done"&&(s.r===""||s.r==null))s.r=s.pr;save();rToday()};
+ A.querySelectorAll("[data-ok]").forEach(b=>b.onclick=()=>mark(b.dataset.ok,"done"));
+ A.querySelectorAll("[data-no]").forEach(b=>b.onclick=()=>mark(b.dataset.no,"fail"));
+ A.querySelectorAll("[data-c]").forEach(t=>t.oninput=()=>{w.ex[+t.dataset.c].comment=t.value;save()});
+ A.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{const e=w.ex[+b.dataset.add];const l=e.sets[e.sets.length-1]||{pw:"",pr:""};e.sets.push({pw:l.pw,pr:l.pr,w:l.w??l.pw,r:"",st:"plan"});save();rToday()});
+ A.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{const e=w.ex[+b.dataset.rm];if(e.sets.length>1)e.sets.pop();save();rToday()});
+ A.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{w.ex.splice(+b.dataset.del,1);save();rToday()});
+ A.querySelectorAll("[data-info]").forEach(b=>b.onclick=()=>exSheet(w.ex[+b.dataset.info].id));
+ A.querySelectorAll("[data-swap]").forEach(b=>b.onclick=()=>{const ei=+b.dataset.swap;exSheet(w.ex[ei].id,a=>{const e=w.ex[ei];e.comment=(e.comment?e.comment+" ":"")+"[замена: "+LIB[e.id].n+"]";e.id=a;e.sets.forEach(s=>{s.pw="";s.w="";s.st="plan"});e.why="замена — подбери вес";save();rToday()})});
+ A.querySelector("#addEx").onclick=()=>pickEx(id=>{w.ex.push({id,spec:null,comment:"",why:"",sets:[{pw:"",pr:"",w:"",r:"",st:"plan"}]});save();rToday()});
+ A.querySelector("#saveTpl").onclick=()=>{if(!w.ex.length){toast("Добавь хотя бы одно упражнение");return}saveTemplate(w)};
+ A.querySelector("#fin").onclick=()=>{const fails=w.ex.reduce((a,e)=>a+e.sets.filter(s=>s.st==="fail").length,0),pl=w.ex.reduce((a,e)=>a+e.sets.filter(s=>s.st==="plan").length,0);w.finished=true;save();S.cur=null;toast(`Готово. Не выполнено: ${fails}, не отмечено: ${pl}`);go("log")};
+ A.querySelector("#delW").onclick=()=>sheet(`<div class="h2">Удалить тренировку?</div><div class="row"><button id="y" class="pri">Удалить</button><button id="n">Отмена</button></div>`,s=>{s.querySelector("#n").onclick=closeSheet;s.querySelector("#y").onclick=async()=>{await delWorkout(w);S.cur=null;closeSheet();rToday()}})}
+function pickEx(cb){sheet(`<div class="ex-h"><div class="t">Выбери упражнение</div><button class="sm" id="cx">✕</button></div><input id="q" placeholder="Поиск" style="margin:8px 0"><div id="lst"></div>`,s=>{s.querySelector("#cx").onclick=closeSheet;const draw=q=>{s.querySelector("#lst").innerHTML=Object.entries(LIB).filter(([k,v])=>v.n.toLowerCase().includes(q.toLowerCase())).map(([k,v])=>`<div class="list-i" data-k="${k}"><b>${esc(v.n)}</b><div class="chips">${v.m.map(x=>`<span class="mchip">${M[x]}</span>`).join("")}</div></div>`).join("");s.querySelectorAll("[data-k]").forEach(d=>d.onclick=()=>{closeSheet();cb(d.dataset.k)})};draw("");s.querySelector("#q").oninput=e=>draw(e.target.value)})}
+function gymDialog(cb){sheet(`<div class="h2">Новый зал</div><input id="gn" placeholder="Название, напр. РП Białystok"><div class="row" style="margin-top:10px"><button class="pri" id="ok">Добавить</button><button id="cn">Отмена</button></div>`,s=>{s.querySelector("#cn").onclick=()=>{closeSheet();rToday()};s.querySelector("#ok").onclick=()=>{const g=s.querySelector("#gn").value.trim();if(!g)return;if(!S.settings.gyms.includes(g))S.settings.gyms.push(g);saveSettings();closeSheet();cb(g)}})}
+/* ===================== Экран: журнал ===================== */
+function rLog(){$("#ttl").textContent="Журнал";const p=prof();
+ const app=S.workouts.filter(w=>w.profile===p.id).map(w=>({date:w.date,title:w.title,gym:w.gym,app:true,w}));
+ const hist=p.hist?S.hist.map(h=>({date:h.date,title:h.title,gym:h.gym,app:false,h})):[];
+ const all=app.concat(hist).sort((a,b)=>b.date.localeCompare(a.date));
+ let h=`<div class="mut" style="margin-bottom:8px">${app.length} в приложении · ${hist.length} из заметок</div>`;
+ if(!all.length)h+=`<div class="card mut">Пока пусто. Начни тренировку на вкладке «Тренировка».</div>`;
+ all.slice(0,150).forEach((x,i)=>{h+=`<div class="card hist ${x.app?"app":""}" data-i="${i}"><div class="ex-h"><div class="t">${esc(x.title)}</div><span class="tag">${x.app?"приложение":"заметки"}</span></div><div class="mut">${fmtD(x.date)}${x.gym?" · "+esc(x.gym):""}</div></div>`});
+ $("#app").innerHTML=h;$("#app").querySelectorAll("[data-i]").forEach(c=>c.onclick=()=>{const x=all[+c.dataset.i];if(x.app){S.cur=x.w;go("today")}else histSheet(x.h)})}
+function histSheet(hh){sheet(`<div class="ex-h"><div class="t">${esc(hh.title)}</div><button class="sm" id="cx">✕</button></div><div class="mut">${fmtD(hh.date)} · из заметок</div>`+hh.ex.map(e=>`<div class="list-i"><b>${esc(e.name)}</b><div>${e.sets.map(s=>esc(s.w)+"×"+s.r).join(", ")}</div></div>`).join(""),s=>s.querySelector("#cx").onclick=closeSheet)}
+/* ===================== Экран: прогресс и анализ ===================== */
+function chart(pts){if(pts.length<2)return`<div class="mut">Мало данных для графика.</div>`;
+ const W=320,H=170,pl=34,pb=22,pt=10,pr=8;const ys=pts.map(p=>p.top);let mn=Math.min(...ys),mx=Math.max(...ys);if(mn===mx){mn-=5;mx+=5}const pad=(mx-mn)*.1;mn-=pad;mx+=pad;
+ const t0=new Date(pts[0].date).getTime(),t1=new Date(pts[pts.length-1].date).getTime()||t0+1;
+ const X=d=>pl+(new Date(d).getTime()-t0)/((t1-t0)||1)*(W-pl-pr),Y=v=>pt+(mx-v)/(mx-mn)*(H-pt-pb);
+ const ticks=[mn+(mx-mn)*.1,(mn+mx)/2,mx-(mx-mn)*.1].map(v=>Math.round(v*2)/2);
+ const path=pts.map((p,i)=>(i?"L":"M")+X(p.date).toFixed(1)+" "+Y(p.top).toFixed(1)).join(" ");
+ return`<svg viewBox="0 0 ${W} ${H}" width="100%">${ticks.map(v=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="#2b303b"/><text x="${pl-4}" y="${Y(v)+3}" text-anchor="end">${v}</text>`).join("")}
+ <path d="${path}" fill="none" stroke="#f59e0b" stroke-width="2"/>${pts.map(p=>`<circle cx="${X(p.date)}" cy="${Y(p.top)}" r="3" fill="${p.src==="app"?"#f59e0b":"#8b93a5"}"/>`).join("")}
+ <text x="${pl}" y="${H-6}">${fmtD(pts[0].date)}</text><text x="${W-pr}" y="${H-6}" text-anchor="end">${fmtD(pts[pts.length-1].date)}</text></svg>
+ <div class="mut">Максимальный рабочий вес за тренировку, кг · серые — заметки, оранжевые — приложение</div>`}
+function rProg(){$("#ttl").textContent="Прогресс";const ids=Object.keys(LIB).filter(k=>sessionsFor(k).length);if(!ids.includes(S.progEx))S.progEx=ids[0]||"bench";
+ const pts=sessionsFor(S.progEx);const last=pts[pts.length-1];const best=pts.reduce((a,p)=>p.top>a?p.top:a,0);
+ let h=`<div class="card"><select id="pe">${ids.map(k=>`<option value="${k}" ${k===S.progEx?"selected":""}>${esc(LIB[k].n)} (${sessionsFor(k).length})</option>`).join("")}</select>
+ <div style="margin-top:10px">${chart(pts)}</div>${last?`<div class="row" style="margin-top:8px"><div><div class="mut">Последний</div><b>${last.top} кг</b></div><div><div class="mut">Лучший</div><b>${best} кг</b></div><div><div class="mut">Тренировок</div><b>${pts.length}</b></div></div>`:""}</div>
+ <div class="card"><div class="h2">Анализ</div><div class="mut">Запускается только по кнопке. Сейчас это локальный мок-анализ по правилам; позже здесь будет ИИ.</div>
+ <button class="pri" id="run" style="width:100%;margin-top:10px">Запустить анализ</button><div id="ana" class="ana" style="margin-top:10px">${S.ana||""}</div></div>`;
+ $("#app").innerHTML=h;$("#pe").onchange=e=>{S.progEx=e.target.value;rProg()};$("#run").onclick=()=>{$("#ana").innerHTML='<div class="mut">Считаю…</div>';setTimeout(()=>{S.ana=mockAnalysis();$("#ana").innerHTML=S.ana},600)}}
+function mockAnalysis(){const p=prof();const keys=["bench","incline_db","pullup","bb_curl","db_ohp","ohp_machine","squat","deadlift","plate_row","lat_raise"];let out=[];let plat=0;
+ keys.forEach(k=>{const s=sessionsFor(k);if(s.length<4)return;const best=Math.max(...s.map(x=>x.top));const firstBest=s.find(x=>x.top===best);const days=Math.round((Date.now()-new Date(firstBest.date))/864e5);
+  const last=s[s.length-1];const start=s[0];
+  if(days>=60){plat++;out.push(`<p class="warn">⚠ <b>${LIB[k].n}</b>: рекорд ${best} кг поставлен ${fmtD(firstBest.date)} — ${days} дн. без прибавки. Сейчас ${last.top} кг.</p>`)}
+  else out.push(`<p class="good">✓ <b>${LIB[k].n}</b>: рекорд ${best} кг ${fmtD(firstBest.date)} (было ${start.top} кг ${fmtD(start.date)}).</p>`)});
+ const legs=["squat","leg_press","deadlift","rdl","lunge","leg_ext","leg_curl"].reduce((a,k)=>a+sessionsFor(k).filter(x=>Date.now()-new Date(x.date)<90*864e5).length,0);
+ if(legs<6)out.push(`<p class="warn">⚠ Ноги: ${legs} тренировок за 90 дней — меньше одной в неделю.</p>`);
+ const aw=S.workouts.filter(w=>w.profile===p.id);let ok=0,fl=0;aw.forEach(w=>w.ex.forEach(e=>e.sets.forEach(s=>{if(s.st==="done")ok++;if(s.st==="fail")fl++})));
+ if(ok+fl)out.push(`<p>Выполнено подходов в приложении: <b>${ok}</b>, не выполнено: <b>${fl}</b> (${Math.round(fl/(ok+fl)*100)}%).${fl/(ok+fl)>.2?' <span class="warn">Много срывов — проверь стартовые веса и сон.</span>':""}</p>`);
+ const ms=S.metrics.filter(m=>m.profile===p.id);const bad=ms.filter(m=>(m.tags||[]).some(t=>["болел","плохо спал","алкоголь"].includes(t)));
+ if(ms.length)out.push(`<p>Записей самочувствия: ${ms.length}; из них с пометками «болел/плохо спал/алкоголь»: ${bad.length}.</p>`);else out.push(`<p class="mut">Добавь записи на вкладке «Самочувствие» — анализ сможет связать сон и болезни с результатами.</p>`);
+ if(p.hist){const hs=S.hist.filter(h=>/болезн|плохо спал|бухич|перерыв/i.test(h.title));if(hs.length)out.push(`<p>В заметках ${hs.length} тренировок с пометками о болезни, сне или перерыве — после них веса проседали на 1–3 недели.</p>`)}
+ out.unshift(`<p><b>Итог:</b> ${plat?`плато в ${plat} упражнениях.`:"явных плато нет."} Рекомендация: правило «верх диапазона во всех подходах → +2,5 кг».</p>`);
+ return out.join("")+`<div class="mut" style="margin-top:8px">Мок-анализ · ${new Date().toLocaleString("ru")}</div>`}
+/* ===================== Экран: самочувствие ===================== */
+function rBody(){$("#ttl").textContent="Самочувствие";const p=prof();const d=S.bodyDate||today();
+ const m=S.metrics.find(x=>x.profile===p.id&&x.date===d)||{profile:p.id,date:d,tags:[]};
+ const list=S.metrics.filter(x=>x.profile===p.id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);
+ let h=`<div class="card"><div class="row"><input type="date" id="bd" value="${d}"></div>
+ <div class="row" style="margin-top:8px"><div><div class="mut">Вес, кг</div><input inputmode="decimal" id="bw" value="${m.weight??""}"></div><div><div class="mut">Рост, см</div><input inputmode="numeric" id="bh" value="${p.height??""}"></div></div>
+ <div class="row" style="margin-top:8px"><div><div class="mut">Сон, ч</div><input inputmode="decimal" id="bs" value="${m.sleep??""}"></div><div><div class="mut">Качество сна 1–5</div><input inputmode="numeric" id="bq" value="${m.sleepQ??""}"></div></div>
+ <div class="row" style="margin-top:8px"><div><div class="mut">Ккал</div><input inputmode="numeric" id="bk" value="${m.kcal??""}"></div><div><div class="mut">Белок, г</div><input inputmode="numeric" id="bp" value="${m.protein??""}"></div></div>
+ <div style="margin-top:8px"><div class="mut">Состояние 1–5</div><div class="chips" id="mood">${[1,2,3,4,5].map(i=>`<span class="chip ${m.mood===i?"on":""}" data-m="${i}">${i}</span>`).join("")}</div></div>
+ <div style="margin-top:8px"><div class="mut">Пометки</div><div class="chips" id="tags">${TAGS.map(t=>`<span class="chip ${(m.tags||[]).includes(t)?"on":""}" data-t="${t}">${t}</span>`).join("")}</div></div>
+ <textarea id="bn" placeholder="Заметка" style="margin-top:8px">${esc(m.note||"")}</textarea>
+ <button class="pri" id="bsave" style="width:100%;margin-top:10px">Сохранить</button></div>
+ <div class="card"><div class="h2">Последние записи</div>${list.length?list.map(x=>`<div class="list-i"><b>${fmtD(x.date)}</b> <span class="mut">${x.weight?x.weight+" кг · ":""}${x.sleep?"сон "+x.sleep+" ч · ":""}${x.mood?"сост. "+x.mood:""}</span><div class="chips">${(x.tags||[]).map(t=>`<span class="tag">${t}</span>`).join("")}</div></div>`).join(""):'<div class="mut">Пока нет записей.</div>'}</div>`;
+ $("#app").innerHTML=h;const A=$("#app");
+ A.querySelector("#bd").onchange=e=>{S.bodyDate=e.target.value;rBody()};
+ A.querySelectorAll("[data-m]").forEach(c=>c.onclick=()=>{m.mood=+c.dataset.m;A.querySelectorAll("[data-m]").forEach(x=>x.classList.toggle("on",x===c))});
+ A.querySelectorAll("[data-t]").forEach(c=>c.onclick=()=>{m.tags=m.tags||[];const t=c.dataset.t;m.tags=m.tags.includes(t)?m.tags.filter(x=>x!==t):m.tags.concat(t);c.classList.toggle("on")});
+ A.querySelector("#bsave").onclick=async()=>{Object.assign(m,{weight:num(A.querySelector("#bw").value),sleep:num(A.querySelector("#bs").value),sleepQ:num(A.querySelector("#bq").value),kcal:num(A.querySelector("#bk").value),protein:num(A.querySelector("#bp").value),note:A.querySelector("#bn").value});
+  const hh=num(A.querySelector("#bh").value);if(hh!==p.height){p.height=hh;saveSettings()}
+  if(!S.metrics.includes(m))S.metrics.push(m);await saveMetric(JSON.parse(JSON.stringify(m)));rBody()}}
+/* ===================== Экран: ещё ===================== */
+function rMore(){$("#ttl").textContent="Настройки";const st=S.settings;
+ let h=`<div class="card"><div class="h2">Программа</div><select id="pg">${Object.entries(PROGRAMS).map(([k,v])=>`<option value="${k}" ${k===st.program?"selected":""}>${esc(v.n)}</option>`).join("")}</select>
+ <div class="mut" style="margin-top:6px">Вес на будущий день считается сам: верх диапазона во всех подходах → +шаг; дважды не добрал → −10%.</div></div>
+ <div class="card"><div class="h2">Профили</div>${st.profiles.map((p,i)=>`<div class="row" style="margin-bottom:8px"><input data-pn="${i}" value="${esc(p.name)}"><label class="mut" style="flex:0 0 auto"><input type="checkbox" data-ph="${i}" ${p.hist?"checked":""} style="width:auto"> история 2026</label></div>`).join("")}
+ <button class="sm" id="addP">+ профиль</button></div>
+ <div class="card"><div class="h2">Залы</div><div class="chips">${st.gyms.map((g,i)=>`<span class="chip">${esc(g)} <span data-gx="${i}" style="cursor:pointer">✕</span></span>`).join("")}</div><button class="sm" id="addG" style="margin-top:8px">+ зал</button></div>
+ <div class="card"><div class="h2">Данные</div><div class="mut" style="margin-bottom:8px">Бэкап, перенос на новый телефон, загрузка истории из заметок</div>
+ <div class="row"><button class="sm" id="exp">⬇ Экспорт</button><label class="sm" style="flex:1"><span style="display:block;text-align:center;border:1px solid var(--line);border-radius:10px;padding:5px 9px;background:var(--card2)">⬆ Импорт файла</span><input type="file" id="imp" accept=".json,application/json" style="display:none"></label></div>
+ <div class="mut" style="margin-top:6px">История в приложении: ${S.hist.length} тренировок из заметок</div></div>
+ <div class="card"><div class="h2">Упражнения</div><div class="mut" style="margin-bottom:6px">Карта мышц, техника, фото, замены</div><button class="sm" id="lib">Открыть справочник</button></div>
+ <div class="card mut">Данные хранятся только на этом телефоне и работают без интернета. Делай экспорт для бэкапа.</div>`;
+ $("#app").innerHTML=h;const A=$("#app");
+ A.querySelector("#pg").onchange=e=>{st.program=e.target.value;st.nextDay={};saveSettings()};
+ A.querySelectorAll("[data-pn]").forEach(i=>{i.oninput=()=>{st.profiles[+i.dataset.pn].name=i.value.trim()||"Без имени";renderProf()};i.onchange=()=>{saveSettings();toast("Имя сохранено")}});
+ A.querySelectorAll("[data-ph]").forEach(i=>i.onchange=()=>{st.profiles[+i.dataset.ph].hist=i.checked;saveSettings()});
+ A.querySelector("#addP").onclick=()=>{st.profiles.push({id:"p"+Date.now().toString(36),name:"Новый",height:null,hist:false});saveSettings();renderProf();rMore()};
+ A.querySelectorAll("[data-gx]").forEach(x=>x.onclick=()=>{st.gyms.splice(+x.dataset.gx,1);saveSettings();rMore()});
+ A.querySelector("#addG").onclick=()=>gymDialog(()=>rMore());
+ A.querySelector("#lib").onclick=()=>pickEx(id=>exSheet(id));
+ A.querySelector("#exp").onclick=async()=>{const all=await LDB.all();const blob=new Blob([JSON.stringify({app:"gym-diary",v:1,exported:new Date().toISOString(),data:all})],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="gym-diary-"+today()+".json";document.body.appendChild(a);a.click();a.remove();toast("Файл сохранён в Загрузки")};
+ A.querySelector("#imp").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());let n=0;
+  if(j.app==="gym-diary"&&j.data){for(const[k,v]of Object.entries(j.data)){await LDB.doc(k).set(v);n++}toast("Импортировано записей: "+n)}
+  else if(Array.isArray(j.items)){const cur=S.hist.slice();const keys=new Set(cur.map(x=>x.date+x.title));j.items.forEach(x=>{if(!keys.has(x.date+x.title)){cur.push(x);n++}});await LDB.doc("hist/all").set({items:cur});toast("История: добавлено "+n+" тренировок")}
+  else{toast("Не тот формат файла");return}
+  setTimeout(()=>location.reload(),900)}catch(err){toast("Ошибка импорта: "+err.message)}}}
+renderNav();loadAll();
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+</script>
+</body>
+</html>
