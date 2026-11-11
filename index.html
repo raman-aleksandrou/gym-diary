@@ -399,6 +399,40 @@ function mockAnalysis(){const p=prof();const keys=["bench","incline_db","pullup"
  out.unshift(`<p><b>Итог:</b> ${plat?`плато в ${plat} упражнениях.`:"явных плато нет."} Рекомендация: правило «верх диапазона во всех подходах → +2,5 кг».</p>`);
  return out.join("")+`<div class="mut" style="margin-top:8px">Мок-анализ · ${new Date().toLocaleString("ru")}</div>`}
 /* ===================== Экран: самочувствие ===================== */
+/* ===================== Калькулятор калорий (Миффлин — Сан-Жеор) ===================== */
+const ACT=[[1.2,"Без тренировок, сидячая работа"],[1.375,"1–3 тренировки в неделю"],[1.55,"3–5 тренировок в неделю"],[1.725,"6–7 тренировок или физическая работа"],[1.9,"Тяжёлая физическая работа + спорт"]];
+function kcalCalc(sex,age,h,w,act){if(!(age>0&&h>0&&w>0))return null;
+ const bmr=10*w+6.25*h-5*age+(sex==="f"?-161:5);const tdee=bmr*act;
+ const pk=sex==="f"?1.8:2.0, fk=sex==="f"?1.0:0.9;
+ const ph=(k,kc)=>{const p=Math.round(w*pk),f=Math.round(w*fk);return{k,kc:Math.round(kc/10)*10,p,f,c:Math.max(0,Math.round((kc-p*4-f*9)/4))}};
+ return{bmr:Math.round(bmr),tdee:Math.round(tdee),rows:[ph("cut",tdee*0.85),ph("keep",tdee),ph("bulk",tdee*(sex==="f"?1.07:1.08))]}}
+const GOALN={cut:"Сушка",keep:"Поддержка",bulk:"Масса"},GOALT={cut:"−0,5…0,7% веса в неделю",keep:"вес на месте",bulk:"+1–1,5 кг в месяц"};
+function calcCard(p){const lw=(S.metrics.filter(x=>x.profile===p.id&&x.weight).sort((a,b)=>b.date.localeCompare(a.date))[0]||{}).weight;
+ const c=p.calc||{};
+ return`<div class="card" id="calc"><div class="h2">Калькулятор калорий</div>
+ <div class="mut" style="margin-bottom:6px">Пол</div><div class="chips" id="cs"><span class="chip ${c.sex!=="f"?"on":""}" data-s="m">Мужчина</span><span class="chip ${c.sex==="f"?"on":""}" data-s="f">Женщина</span></div>
+ <div class="row" style="margin-top:8px"><div><div class="mut">Возраст</div><input inputmode="numeric" id="ca" value="${c.age??""}"></div><div><div class="mut">Рост, см</div><input inputmode="numeric" id="ch" value="${p.height??""}"></div><div><div class="mut">Вес, кг</div><input inputmode="decimal" id="cw" value="${c.w??lw??""}"></div></div>
+ <div style="margin-top:8px"><div class="mut">Активность</div><select id="cact">${ACT.map(([v,n])=>`<option value="${v}" ${(c.act??1.55)==v?"selected":""}>${n}</option>`).join("")}</select></div>
+ <div style="margin-top:8px"><div class="mut">Цель</div><div class="chips" id="cg">${Object.keys(GOALN).map(g=>`<span class="chip ${(c.goal||"keep")===g?"on":""}" data-g="${g}">${GOALN[g]}</span>`).join("")}</div></div>
+ <div id="cres" style="margin-top:10px"></div>
+ <div class="mut" style="margin-top:6px">Формула Миффлина — Сан-Жеора. Это стартовая цифра: 2 недели ешь эту норму, сравни средний вес за неделю и поправь на 150–200 ккал.</div></div>`}
+function bindCalc(A,p){const c=p.calc=p.calc||{};c.sex=c.sex||"m";c.goal=c.goal||"keep";c.act=c.act||1.55;
+ if(c.w==null){const v=num(A.querySelector("#cw").value);if(v)c.w=v}
+ const draw=()=>{const r=kcalCalc(c.sex,num(c.age),num(p.height),num(c.w),+c.act);const el=A.querySelector("#cres");
+  if(!r){el.innerHTML='<div class="mut">Заполни возраст, рост и вес.</div>';return}
+  el.innerHTML=`<div class="mut">Обмен в покое ≈ ${r.bmr} ккал · поддержка ≈ ${r.tdee} ккал</div>
+  <table style="width:100%;border-collapse:collapse;margin-top:6px;font-size:14px"><tr class="mut"><td></td><td>Ккал</td><td>Белок</td><td>Жиры</td><td>Углев.</td></tr>
+  ${r.rows.map(x=>`<tr style="${x.k===c.goal?"font-weight:700;background:rgba(37,99,235,.12)":""}"><td style="padding:5px 4px">${GOALN[x.k]}</td><td>${x.kc}</td><td>${x.p}</td><td>${x.f}</td><td>${x.c}</td></tr>`).join("")}</table>
+  <div class="mut" style="margin-top:4px">Цель «${GOALN[c.goal]}»: ${GOALT[c.goal]}. Белок, жиры, углеводы — граммы в день.</div>`;
+  const t=r.rows.find(x=>x.k===c.goal);c.target={kcal:t.kc,protein:t.p}};
+ const save=()=>saveSettings();
+ A.querySelectorAll("#cs [data-s]").forEach(x=>x.onclick=()=>{c.sex=x.dataset.s;A.querySelectorAll("#cs [data-s]").forEach(y=>y.classList.toggle("on",y===x));draw();save()});
+ A.querySelectorAll("#cg [data-g]").forEach(x=>x.onclick=()=>{c.goal=x.dataset.g;A.querySelectorAll("#cg [data-g]").forEach(y=>y.classList.toggle("on",y===x));draw();save()});
+ A.querySelector("#ca").oninput=e=>{c.age=num(e.target.value);draw()};A.querySelector("#ca").onchange=save;
+ A.querySelector("#ch").oninput=e=>{p.height=num(e.target.value);const bh=A.querySelector("#bh");if(bh)bh.value=e.target.value;draw()};A.querySelector("#ch").onchange=save;
+ A.querySelector("#cw").oninput=e=>{c.w=num(e.target.value);draw()};A.querySelector("#cw").onchange=save;
+ A.querySelector("#cact").onchange=e=>{c.act=+e.target.value;draw();save()};
+ draw()}
 function rBody(){$("#ttl").textContent="Самочувствие";const p=prof();const d=S.bodyDate||today();
  const m=S.metrics.find(x=>x.profile===p.id&&x.date===d)||{profile:p.id,date:d,tags:[]};
  const list=S.metrics.filter(x=>x.profile===p.id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);
@@ -410,8 +444,10 @@ function rBody(){$("#ttl").textContent="Самочувствие";const p=prof()
  <div style="margin-top:8px"><div class="mut">Пометки</div><div class="chips" id="tags">${TAGS.map(t=>`<span class="chip ${(m.tags||[]).includes(t)?"on":""}" data-t="${t}">${t}</span>`).join("")}</div></div>
  <textarea id="bn" placeholder="Заметка" style="margin-top:8px">${esc(m.note||"")}</textarea>
  <button class="pri" id="bsave" style="width:100%;margin-top:10px">Сохранить</button></div>
+${calcCard(p)}
  <div class="card"><div class="h2">Последние записи</div>${list.length?list.map(x=>`<div class="list-i"><b>${fmtD(x.date)}</b> <span class="mut">${x.weight?x.weight+" кг · ":""}${x.sleep?"сон "+x.sleep+" ч · ":""}${x.mood?"сост. "+x.mood:""}</span><div class="chips">${(x.tags||[]).map(t=>`<span class="tag">${t}</span>`).join("")}</div></div>`).join(""):'<div class="mut">Пока нет записей.</div>'}</div>`;
- $("#app").innerHTML=h;const A=$("#app");
+ $("#app").innerHTML=h;const A=$("#app");bindCalc(A,p);
+ {const t=p.calc&&p.calc.target;if(t&&(m.kcal||m.protein)){const n=document.createElement("div");n.className="mut";n.style.marginTop="6px";n.textContent=`За ${fmtD(d)}: ${m.kcal??"—"} из ${t.kcal} ккал · белок ${m.protein??"—"} из ${t.protein} г`;A.querySelector("#bsave").before(n)}}
  A.querySelector("#bd").onchange=e=>{S.bodyDate=e.target.value;rBody()};
  A.querySelectorAll("[data-m]").forEach(c=>c.onclick=()=>{m.mood=+c.dataset.m;A.querySelectorAll("[data-m]").forEach(x=>x.classList.toggle("on",x===c))});
  A.querySelectorAll("[data-t]").forEach(c=>c.onclick=()=>{m.tags=m.tags||[];const t=c.dataset.t;m.tags=m.tags.includes(t)?m.tags.filter(x=>x!==t):m.tags.concat(t);c.classList.toggle("on")});
