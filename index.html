@@ -445,6 +445,23 @@ function newCustom(tpl){const exs=tpl?tpl.ex.map(t=>{const spec=[t.id,t.sets,t.l
 function saveTemplate(w){const st=S.settings;st.templates=st.templates||[];
  const ex=w.ex.map(e=>{const ws=e.sets.map(s=>num(s.w)).filter(x=>x!=null);const rs=e.sets.map(s=>num(s.r)||num(s.pr)).filter(x=>x);return{id:e.id,sets:e.sets.length,lo:e.spec?e.spec[2]:(rs.length?Math.min(...rs):8),hi:e.spec?e.spec[3]:(rs.length?Math.max(...rs):12),w:ws.length?ws[0]:null,inc:e.spec?e.spec[5]:2.5}});
  const ex0=st.templates.find(t=>t.name===w.title);if(ex0){ex0.ex=ex}else st.templates.push({id:"t"+Date.now().toString(36),name:w.title,ex});saveSettings();toast("Шаблон «"+w.title+"» сохранён")}
+function wellOf(pid,date){const m=S.metrics.find(x=>x.profile===pid&&x.date===date);if(!m)return null;
+ const has=m.weight||m.sleep||m.sleepQ||m.mood||(m.tags&&m.tags.length)||m.note||m.kcal||m.protein;return has?m:null}
+function wellCard(w){const m=wellOf(w.profile,w.date);const open=!!S.wellOpen;
+ if(!m)return`<div class="card" style="padding:10px 12px"><div class="ex-h"><div class="t mut" style="font-weight:400">❤️ Самочувствие за ${fmtD(w.date)} не отмечено</div><button class="sm" id="wellAdd">Отметить</button></div></div>`;
+ const bad=["болел","плохо спал","алкоголь","стресс","перерыв"];const tags=m.tags||[];const warn=tags.some(t=>bad.includes(t))||(m.mood&&m.mood<=2)||(m.sleep&&m.sleep<6);
+ const short=[m.sleep?"сон "+m.sleep+" ч":"",m.mood?"сост. "+m.mood+"/5":"",...tags].filter(Boolean).join(" · ");
+ let h=`<div class="card" style="padding:10px 12px;${warn?"border-left:4px solid #f59e0b":""}"><div class="ex-h" id="wellTg" style="cursor:pointer"><div class="t">❤️ Самочувствие${warn?" ⚠️":""}<div class="mut" style="font-weight:400;margin-top:2px">${esc(short||"есть запись")}</div></div><button class="sm">${open?"Свернуть ▴":"Развернуть ▾"}</button></div>`;
+ if(open){const row=(k,v)=>v!=null&&v!==""?`<div class="row" style="justify-content:space-between;margin-top:4px"><span class="mut">${k}</span><span>${esc(String(v))}</span></div>`:"";
+  h+=`<div style="margin-top:8px">${row("Вес",m.weight!=null?m.weight+" кг":null)}${row("Сон",m.sleep!=null?m.sleep+" ч":null)}${row("Качество сна",m.sleepQ!=null?m.sleepQ+" из 5":null)}${row("Состояние",m.mood!=null?m.mood+" из 5":null)}${row("Калории",m.kcal!=null?m.kcal+" ккал":null)}${row("Белок",m.protein!=null?m.protein+" г":null)}
+  ${tags.length?`<div class="chips" style="margin-top:6px">${tags.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}
+  ${m.note?`<div style="margin-top:6px">${esc(m.note)}</div>`:""}
+  ${warn?`<div class="mut" style="margin-top:6px">В такой день повтори прошлые веса, рекорды не пробуй.</div>`:""}
+  <button class="sm" id="wellEdit" style="margin-top:8px">Изменить</button></div>`}
+ return h+`</div>`}
+function bindWell(A,w){const go2=()=>{S.bodyDate=w.date;go("body")};
+ const t=A.querySelector("#wellTg");if(t)t.onclick=()=>{S.wellOpen=!S.wellOpen;const y=window.scrollY;rToday();window.scrollTo(0,y)};
+ const a=A.querySelector("#wellAdd");if(a)a.onclick=go2;const e=A.querySelector("#wellEdit");if(e)e.onclick=go2}
 function rToday(){$("#ttl").textContent="Тренировка";const P=PROGRAMS[progOf()];const p=prof();
  const open=S.workouts.filter(w=>w.profile===p.id&&w.date===today()).sort((a,b)=>b.updated-a.updated)[0];
  if(!S.cur&&open&&!S.noAuto)S.cur=open;
@@ -467,6 +484,7 @@ function rToday(){$("#ttl").textContent="Тренировка";const P=PROGRAMS[
  h+=`<div class="card"><div class="ex-h"><button class="sm" id="back">← Назад</button><span id="st" class="status" style="flex:1;text-align:right;align-self:center"></span></div>
  <input id="wt" value="${esc(w.title)}" placeholder="Название тренировки" style="margin-top:8px;font-weight:600">
  <div class="row" style="margin-top:8px"><input type="date" id="wd" value="${w.date}"><select id="wg">${S.settings.gyms.map(g=>`<option ${g===w.gym?"selected":""}>${esc(g)}</option>`).join("")}<option value="__new">+ Новый зал…</option></select></div></div>`;
+ h+=wellCard(w);
  w.ex.forEach((e,ei)=>{const L=LIB[e.id]||{n:e.id,m:[]};
   h+=`<div class="card" id="ex${ei}"><div class="ex-h"><div class="t">${esc(L.n)}<div class="chips" style="margin-top:4px">${L.m.map(k=>`<span class="mchip">${M[k]}</span>`).join("")}</div></div>
   <button class="sm" data-mv="${ei}:-1" ${ei===0?"disabled":""} aria-label="Выше">↑</button><button class="sm" data-mv="${ei}:1" ${ei===w.ex.length-1?"disabled":""} aria-label="Ниже">↓</button><button class="sm" data-info="${ei}">ⓘ</button><button class="sm" data-swap="${ei}">⇄</button></div>
@@ -482,6 +500,7 @@ function rToday(){$("#ttl").textContent="Тренировка";const P=PROGRAMS[
  <button style="width:100%;margin-bottom:10px" id="saveTpl">☆ Сохранить как шаблон</button>
  <div class="row"><button class="pri" id="fin">Завершить</button><button id="delW">Удалить</button></div>`;
  $("#app").innerHTML=h;const A=$("#app");const save=()=>saveWorkout(w);
+ bindWell(A,w);
  A.querySelector("#back").onclick=()=>{S.cur=null;S.noAuto=true;rToday();window.scrollTo(0,0)};
  A.querySelector("#wt").oninput=e=>{w.title=e.target.value;save()};
  A.querySelector("#wd").onchange=e=>{w.date=e.target.value;save()};
@@ -512,7 +531,7 @@ function rLog(){$("#ttl").textContent="Журнал";const p=prof();
  const all=app.concat(hist).sort((a,b)=>b.date.localeCompare(a.date));
  let h=`<div class="mut" style="margin-bottom:8px">${app.length} в приложении · ${hist.length} из заметок</div>`;
  if(!all.length)h+=`<div class="card mut">Пока пусто. Начни тренировку на вкладке «Тренировка».</div>`;
- all.slice(0,150).forEach((x,i)=>{h+=`<div class="card hist ${x.app?"app":""}" data-i="${i}"><div class="ex-h"><div class="t">${esc(x.title)}</div><span class="tag">${x.app?"приложение":"заметки"}</span></div><div class="mut">${fmtD(x.date)}${x.gym?" · "+esc(x.gym):""}</div></div>`});
+ all.slice(0,150).forEach((x,i)=>{h+=`<div class="card hist ${x.app?"app":""}" data-i="${i}"><div class="ex-h"><div class="t">${esc(x.title)}</div><span class="tag">${x.app?"приложение":"заметки"}</span></div><div class="mut">${fmtD(x.date)}${x.gym?" · "+esc(x.gym):""}${wellOf(p.id,x.date)?" · ❤️ "+esc(((wellOf(p.id,x.date).tags)||[]).join(", ")||"самочувствие"):""}</div></div>`});
  $("#app").innerHTML=h;$("#app").querySelectorAll("[data-i]").forEach(c=>c.onclick=()=>{const x=all[+c.dataset.i];if(x.app){S.cur=x.w;go("today")}else histSheet(x.h)})}
 function histSheet(hh){sheet(`<div class="ex-h"><div class="t">${esc(hh.title)}</div><button class="sm" id="cx">✕</button></div><div class="mut">${fmtD(hh.date)} · из заметок</div>`+hh.ex.map(e=>`<div class="list-i"><b>${esc(e.name)}</b><div>${e.sets.map(s=>esc(s.w)+"×"+s.r).join(", ")}</div></div>`).join(""),s=>s.querySelector("#cx").onclick=closeSheet)}
 /* ===================== Экран: прогресс и анализ ===================== */
