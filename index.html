@@ -319,8 +319,8 @@ function rToday(){$("#ttl").textContent="Тренировка";const P=PROGRAMS[
  <input id="wt" value="${esc(w.title)}" placeholder="Название тренировки" style="margin-top:8px;font-weight:600">
  <div class="row" style="margin-top:8px"><input type="date" id="wd" value="${w.date}"><select id="wg">${S.settings.gyms.map(g=>`<option ${g===w.gym?"selected":""}>${esc(g)}</option>`).join("")}<option value="__new">+ Новый зал…</option></select></div></div>`;
  w.ex.forEach((e,ei)=>{const L=LIB[e.id]||{n:e.id,m:[]};
-  h+=`<div class="card"><div class="ex-h"><div class="t">${esc(L.n)}<div class="chips" style="margin-top:4px">${L.m.map(k=>`<span class="mchip">${M[k]}</span>`).join("")}</div></div>
-  <button class="sm" data-info="${ei}">ⓘ</button><button class="sm" data-swap="${ei}">⇄</button></div>
+  h+=`<div class="card" id="ex${ei}"><div class="ex-h"><div class="t">${esc(L.n)}<div class="chips" style="margin-top:4px">${L.m.map(k=>`<span class="mchip">${M[k]}</span>`).join("")}</div></div>
+  <button class="sm" data-mv="${ei}:-1" ${ei===0?"disabled":""} aria-label="Выше">↑</button><button class="sm" data-mv="${ei}:1" ${ei===w.ex.length-1?"disabled":""} aria-label="Ниже">↓</button><button class="sm" data-info="${ei}">ⓘ</button><button class="sm" data-swap="${ei}">⇄</button></div>
   ${e.spec?`<div class="plan" style="margin-top:6px">План: ${e.spec[1]} × ${e.spec[2]}–${e.spec[3]} · ${esc(e.why||"")}</div>`:""}${lastText(e.id)?`<div class="plan" style="margin-top:2px;opacity:.8">${esc(lastText(e.id))}</div>`:""}
   ${e.sets.map((s,si)=>`<div class="set ${s.st==="done"?"done":s.st==="fail"?"fail":""}"><div class="n">${si+1}</div>
    <div><div class="lbl">кг (план ${s.pw??"–"})</div><input inputmode="decimal" data-w="${ei}_${si}" value="${s.w??""}"></div>
@@ -347,6 +347,7 @@ function rToday(){$("#ttl").textContent="Тренировка";const P=PROGRAMS[
  A.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{const e=w.ex[+b.dataset.add];const l=e.sets[e.sets.length-1]||{pw:"",pr:""};e.sets.push({pw:l.pw,pr:l.pr,w:l.w??l.pw,r:"",st:"plan"});save();rToday()});
  A.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{const e=w.ex[+b.dataset.rm];if(e.sets.length>1)e.sets.pop();save();rToday()});
  A.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{w.ex.splice(+b.dataset.del,1);save();rToday()});
+ A.querySelectorAll("[data-mv]").forEach(b=>b.onclick=()=>{const[i,d]=b.dataset.mv.split(":").map(Number);const j=i+d;if(j<0||j>=w.ex.length)return;[w.ex[i],w.ex[j]]=[w.ex[j],w.ex[i]];save();rToday();const el=document.getElementById("ex"+j);if(el)el.scrollIntoView({block:"center"})});
  A.querySelectorAll("[data-info]").forEach(b=>b.onclick=()=>exSheet(w.ex[+b.dataset.info].id));
  A.querySelectorAll("[data-swap]").forEach(b=>b.onclick=()=>{const ei=+b.dataset.swap;exSheet(w.ex[ei].id,a=>{const e=w.ex[ei];e.comment=(e.comment?e.comment+" ":"")+"[замена: "+LIB[e.id].n+"]";e.id=a;e.sets.forEach(s=>{s.pw="";s.w="";s.st="plan"});e.why="замена — подбери вес";save();rToday()})});
  A.querySelector("#addEx").onclick=()=>pickEx(id=>{w.ex.push({id,spec:null,comment:"",why:"",sets:[{pw:"",pr:"",w:"",r:"",st:"plan"}]});save();rToday()});
