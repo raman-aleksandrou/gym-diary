@@ -592,30 +592,20 @@ function rFood(){$("#ttl").textContent="Питание";const p=prof();const d=S
  let h=`<div class="card"><div class="row"><input type="date" id="fd" value="${d}"></div>
  <div style="margin-top:10px"><div class="row" style="justify-content:space-between"><b>Калории</b><span>${Math.round(tot.kcal)}${G?" / "+G.kc:""} ккал</span></div>${bar(tot.kcal,G&&G.kc,"#2563eb")}</div>
  <div style="margin-top:8px"><div class="row" style="justify-content:space-between"><span>Белок</span><span>${Math.round(tot.protein)}${G?" / "+G.p:""} г</span></div>${bar(tot.protein,G&&G.p*1.25,"#16a34a")}</div>
- <div class="row" style="margin-top:8px;justify-content:space-between"><span class="mut">Жиры ${Math.round(tot.fat)}${G?" / "+G.f:""} г</span><span class="mut">Углеводы ${Math.round(tot.carbs)}${G?" / "+G.c:""} г</span></div>
+ <div class="row" style="margin-top:8px;justify-content:space-between"><span class="mut">${G?"Жиры "+G.f+" г":""}</span><span class="mut">${G?"Углеводы "+G.c+" г":""}</span></div>
  ${G?"":`<div class="mut" style="margin-top:8px">Заполни калькулятор ниже — появится дневная норма.</div>`}</div>
- <div class="card"><div class="h2">Добавить приём пищи</div>
- <input id="mn" placeholder="Что съел (необязательно)">
- <div class="row" style="margin-top:8px"><div><div class="mut">Ккал</div><input inputmode="decimal" id="mk"></div><div><div class="mut">Белок</div><input inputmode="decimal" id="mp"></div><div><div class="mut">Жиры</div><input inputmode="decimal" id="mf"></div><div><div class="mut">Углев.</div><input inputmode="decimal" id="mc"></div></div>
- <button class="pri" id="madd" style="width:100%;margin-top:10px">+ Добавить</button>
- ${meals.length?`<div style="margin-top:10px">${meals.map((x,i)=>`<div class="list-i row" style="justify-content:space-between"><div><b>${esc(x.name||"Приём "+(i+1))}</b> <span class="mut">${x.time||""}</span><div class="mut">${x.kcal||0} ккал · Б ${x.protein||0} · Ж ${x.fat||0} · У ${x.carbs||0}</div></div><button class="sm" data-mdel="${i}">✕</button></div>`).join("")}</div>`:""}
- </div>
+ <div class="card"><div class="h2">Итог дня</div><div class="mut" style="margin-bottom:6px">Необязательно. Если считаешь калории — внеси итог за день.</div>
+ <div class="row"><div><div class="mut">Ккал</div><input inputmode="numeric" id="dk" value="${m.kcal??""}"></div><div><div class="mut">Белок, г</div><input inputmode="numeric" id="dp" value="${m.protein??""}"></div></div>
+ <button class="pri" id="dsave" style="width:100%;margin-top:10px">Сохранить</button></div>
  ${weekCard(p,G)}
  ${calcCard(p)}`;
  $("#app").innerHTML=h;const A=$("#app");bindCalc(A,p,()=>rFood());
  A.querySelector("#fd").onchange=e=>{S.foodDate=e.target.value;rFood()};
- const recalc=()=>{const s=k=>Math.round((m.meals||[]).reduce((a,x)=>a+(num(x[k])||0),0)*10)/10;m.kcal=s("kcal");m.protein=s("protein");m.fat=s("fat");m.carbs=s("carbs")};
- const persist=async()=>{if(!S.metrics.includes(m))S.metrics.push(m);await saveMetric(JSON.parse(JSON.stringify(m)));rFood()};
- A.querySelector("#madd").onclick=async()=>{const g=id=>num(A.querySelector(id).value);const x={name:A.querySelector("#mn").value.trim(),kcal:g("#mk"),protein:g("#mp"),fat:g("#mf"),carbs:g("#mc"),time:new Date().toTimeString().slice(0,5)};
-  if(!x.kcal&&!x.protein){toast("Введи хотя бы калории или белок");return}
-  if(!x.kcal)x.kcal=Math.round((x.protein||0)*4+(x.fat||0)*9+(x.carbs||0)*4);
-  if(!m.meals&&(m.kcal||m.protein))m.meals=[{name:"Ранее за день",kcal:m.kcal||0,protein:m.protein||0,fat:m.fat||0,carbs:m.carbs||0,time:""}];
-  m.meals=(m.meals||[]).concat(x);recalc();await persist()};
- A.querySelectorAll("[data-mdel]").forEach(b=>b.onclick=async()=>{m.meals.splice(+b.dataset.mdel,1);recalc();await persist()})}
+ A.querySelector("#dsave").onclick=async()=>{m.kcal=num(A.querySelector("#dk").value);m.protein=num(A.querySelector("#dp").value);if(!S.metrics.includes(m))S.metrics.push(m);await saveMetric(JSON.parse(JSON.stringify(m)));rFood()}}
 function weekCard(p,G){const ms=S.metrics.filter(x=>x.profile===p.id);const day=k=>{const dt=new Date();dt.setDate(dt.getDate()-k);return dt.toISOString().slice(0,10)};
  const span=(a,b)=>{const ds=[];for(let k=a;k<b;k++)ds.push(day(k));const rows=ms.filter(x=>ds.includes(x.date));const avg=f=>{const v=rows.map(x=>num(x[f])).filter(v=>v);return v.length?{v:v.reduce((s,x)=>s+x,0)/v.length,n:v.length}:null};return{kcal:avg("kcal"),protein:avg("protein"),weight:avg("weight")}};
  const w1=span(0,7),w0=span(7,14);
- if(!w1.kcal&&!w1.weight)return`<div class="card"><div class="h2">Неделя</div><div class="mut">Записывай еду здесь и утренний вес во вкладке «Здоровье» — через неделю тут появятся средние и подсказка, попадаешь ли ты в цель.</div></div>`;
+ if(!w1.kcal&&!w1.weight)return`<div class="card"><div class="h2">Неделя</div><div class="mut">Вноси утренний вес во вкладке «Здоровье» — через неделю тут появятся средние и подсказка, попадаешь ли ты в цель.</div></div>`;
  let hint="";
  if(w1.weight&&w0.weight&&w1.weight.n>=3&&w0.weight.n>=3){const dw=w1.weight.v-w0.weight.v,pct=dw/w0.weight.v*100,goal=(p.calc||{}).goal||"keep";
   const ok=goal==="cut"?pct<=-0.4&&pct>=-0.9:goal==="bulk"?dw>=0.1&&dw<=0.45:Math.abs(pct)<0.3;
