@@ -360,11 +360,11 @@ let stT;function setStatus(t){const el=$("#st");if(el){el.textContent=t;clearTim
 function toast(t){const d=document.createElement("div");d.textContent=t;d.style.cssText="position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#333;color:#fff;padding:8px 14px;border-radius:10px;z-index:50;font-size:14px";document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
 function sheet(html,onMount){const r=$("#sheetRoot");r.innerHTML='<div class="sheet"><div>'+html+'</div></div>';const s=r.firstChild;s.addEventListener("click",e=>{if(e.target===s)closeSheet()});onMount&&onMount(s);}
 function closeSheet(){$("#sheetRoot").innerHTML=""}
-const TABS=[["today","🏋️","Тренировка"],["log","📒","Журнал"],["prog","📈","Прогресс"],["food","🍽️","Питание"],["body","❤️","Здоровье"],["more","⚙️","Ещё"]];
+const TABS=[["today","🏋️","Тренировка"],["log","📒","Журнал"],["prog","📈","Прогресс"],["food","🍽️","Питание"],["more","⚙️","Ещё"]];
 function renderNav(){$("#nav").innerHTML=TABS.map(t=>`<button class="${S.tab===t[0]?"on":""}" data-t="${t[0]}"><b>${t[1]}</b>${t[2]}</button>`).join("");$("#nav").querySelectorAll("button").forEach(b=>b.onclick=()=>go(b.dataset.t))}
 function renderProf(){const sel=$("#profSel");sel.innerHTML=S.settings.profiles.map(p=>`<option value="${p.id}" ${p.id===S.settings.active?"selected":""}>${esc(p.name)}</option>`).join("");sel.onchange=()=>{S.settings.active=sel.value;S.cur=null;saveSettings();go(S.tab)}}
 function scrollKey(t){return t==="today"?"today:"+(S.cur?S.cur.id:"list"):t}
-function go(t){if(!TABS.find(x=>x[0]===t))t="today";S.scroll=S.scroll||{};if(S.tab)S.scroll[scrollKey(S.tab)]=window.scrollY;const same=S.tab===t;S.tab=t;if(location.hash.slice(1)!==t){try{history.replaceState(null,"","#"+t)}catch(e){}}renderNav();({today:rToday,log:rLog,prog:rProg,food:rFood,body:rBody,more:rMore})[t]();
+function go(t){if(!TABS.find(x=>x[0]===t)&&t!=="body")t="today";if(t==="body"&&S.tab!=="body")S.prevTab=S.tab||"today";S.scroll=S.scroll||{};if(S.tab)S.scroll[scrollKey(S.tab)]=window.scrollY;const same=S.tab===t;S.tab=t;if(location.hash.slice(1)!==t){try{history.replaceState(null,"","#"+t)}catch(e){}}renderNav();({today:rToday,log:rLog,prog:rProg,food:rFood,body:rBody,more:rMore})[t]();
  const y=same?0:(S.scroll[scrollKey(t)]||0);window.scrollTo(0,y);if(y)requestAnimationFrame(()=>window.scrollTo(0,y))}
 window.addEventListener("hashchange",()=>{const t=location.hash.slice(1);if(t&&t!==S.tab)go(t)});
 /* ===================== SVG: карта мышц ===================== */
@@ -626,7 +626,7 @@ function rFood(){$("#ttl").textContent="Питание";const p=prof();const d=S
 function weekCard(p,G){const ms=S.metrics.filter(x=>x.profile===p.id);const day=k=>{const dt=new Date();dt.setDate(dt.getDate()-k);return dt.toISOString().slice(0,10)};
  const span=(a,b)=>{const ds=[];for(let k=a;k<b;k++)ds.push(day(k));const rows=ms.filter(x=>ds.includes(x.date));const avg=f=>{const v=rows.map(x=>num(x[f])).filter(v=>v);return v.length?{v:v.reduce((s,x)=>s+x,0)/v.length,n:v.length}:null};return{kcal:avg("kcal"),protein:avg("protein"),weight:avg("weight")}};
  const w1=span(0,7),w0=span(7,14);
- if(!w1.kcal&&!w1.weight)return`<div class="card"><div class="h2">Неделя</div><div class="mut">Вноси утренний вес во вкладке «Здоровье» — через неделю тут появятся средние и подсказка, попадаешь ли ты в цель.</div></div>`;
+ if(!w1.kcal&&!w1.weight)return`<div class="card"><div class="h2">Неделя</div><div class="mut">Вноси утренний вес в блоке «❤️ Самочувствие» на тренировке — через неделю тут появятся средние и подсказка, попадаешь ли ты в цель.</div></div>`;
  let hint="";
  if(w1.weight&&w0.weight&&w1.weight.n>=3&&w0.weight.n>=3){const dw=w1.weight.v-w0.weight.v,pct=dw/w0.weight.v*100,goal=(p.calc||{}).goal||"keep";
   const ok=goal==="cut"?pct<=-0.4&&pct>=-0.9:goal==="bulk"?dw>=0.1&&dw<=0.45:Math.abs(pct)<0.3;
@@ -638,10 +638,10 @@ function weekCard(p,G){const ms=S.metrics.filter(x=>x.profile===p.id);const day=
  <div>Калории в среднем: ${f(w1.kcal,"ккал",0)}${G?` <span class="mut">· норма ${G.kc}</span>`:""}</div>
  <div>Белок в среднем: ${f(w1.protein,"г",0)}</div>
  <div>Вес в среднем: ${f(w1.weight,"кг",1)}</div>${hint}</div>`}
-function rBody(){$("#ttl").textContent="Здоровье";const p=prof();const d=S.bodyDate||today();
+function rBody(){$("#ttl").textContent="Самочувствие";const p=prof();const d=S.bodyDate||today();
  const m=S.metrics.find(x=>x.profile===p.id&&x.date===d)||{profile:p.id,date:d,tags:[]};
  const list=S.metrics.filter(x=>x.profile===p.id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);
- let h=`<div class="card"><div class="row"><input type="date" id="bd" value="${d}"></div>
+ let h=`<div class="card" style="padding:10px 12px"><button class="sm" id="bback">← ${S.prevTab==="today"&&S.cur?"К тренировке":"Назад"}</button></div><div class="card"><div class="row"><input type="date" id="bd" value="${d}"></div>
  <div class="row" style="margin-top:8px"><div><div class="mut">Вес, кг</div><input inputmode="decimal" id="bw" value="${m.weight??""}"></div><div><div class="mut">Рост, см</div><input inputmode="numeric" id="bh" value="${p.height??""}"></div></div>
  <div class="row" style="margin-top:8px"><div><div class="mut">Сон, ч</div><input inputmode="decimal" id="bs" value="${m.sleep??""}"></div><div><div class="mut">Качество сна 1–5</div><input inputmode="numeric" id="bq" value="${m.sleepQ??""}"></div></div>
  <div style="margin-top:8px"><div class="mut">Состояние 1–5</div><div class="chips" id="mood">${[1,2,3,4,5].map(i=>`<span class="chip ${m.mood===i?"on":""}" data-m="${i}">${i}</span>`).join("")}</div></div>
@@ -651,12 +651,13 @@ function rBody(){$("#ttl").textContent="Здоровье";const p=prof();const d
  <div class="card mut">Калории, белок и калькулятор нормы — на вкладке «Питание».</div>
  <div class="card"><div class="h2">Последние записи</div>${list.length?list.map(x=>`<div class="list-i"><b>${fmtD(x.date)}</b> <span class="mut">${x.weight?x.weight+" кг · ":""}${x.sleep?"сон "+x.sleep+" ч · ":""}${x.mood?"сост. "+x.mood:""}</span><div class="chips">${(x.tags||[]).map(t=>`<span class="tag">${t}</span>`).join("")}</div></div>`).join(""):'<div class="mut">Пока нет записей.</div>'}</div>`;
  $("#app").innerHTML=h;const A=$("#app");
+ A.querySelector("#bback").onclick=()=>go(S.prevTab||"today");
  A.querySelector("#bd").onchange=e=>{S.bodyDate=e.target.value;rBody()};
  A.querySelectorAll("[data-m]").forEach(c=>c.onclick=()=>{m.mood=+c.dataset.m;A.querySelectorAll("[data-m]").forEach(x=>x.classList.toggle("on",x===c))});
  A.querySelectorAll("[data-t]").forEach(c=>c.onclick=()=>{m.tags=m.tags||[];const t=c.dataset.t;m.tags=m.tags.includes(t)?m.tags.filter(x=>x!==t):m.tags.concat(t);c.classList.toggle("on")});
  A.querySelector("#bsave").onclick=async()=>{Object.assign(m,{weight:num(A.querySelector("#bw").value),sleep:num(A.querySelector("#bs").value),sleepQ:num(A.querySelector("#bq").value),note:A.querySelector("#bn").value});
   const hh=num(A.querySelector("#bh").value);if(hh!==p.height){p.height=hh;saveSettings()}
-  if(!S.metrics.includes(m))S.metrics.push(m);await saveMetric(JSON.parse(JSON.stringify(m)));rBody()}}
+  if(!S.metrics.includes(m))S.metrics.push(m);await saveMetric(JSON.parse(JSON.stringify(m)));go(S.prevTab||"today")}}
 /* ===================== Экран: ещё ===================== */
 function rMore(){$("#ttl").textContent="Настройки";const st=S.settings;
  let h=`<div class="card"><div class="h2">Программа — ${esc(prof().name)}</div><select id="pg">${["m","f","u"].map(g=>`<optgroup label="${PGROUP[g]}">${Object.entries(PROGRAMS).filter(([k,v])=>v.g===g).map(([k,v])=>`<option value="${k}" ${k===progOf()?"selected":""}>${esc(v.n)}</option>`).join("")}</optgroup>`).join("")}</select>
@@ -665,6 +666,7 @@ function rMore(){$("#ttl").textContent="Настройки";const st=S.settings;
  <div class="mut" style="margin-top:6px">Вес на будущий день считается сам: верх диапазона во всех подходах → +шаг; дважды не добрал → −10%.</div></div>
  <div class="card"><div class="h2">Профили</div>${st.profiles.map((p,i)=>`<div class="row" style="margin-bottom:8px"><input data-pn="${i}" value="${esc(p.name)}"><label class="mut" style="flex:0 0 auto"><input type="checkbox" data-ph="${i}" ${p.hist?"checked":""} style="width:auto"> история 2026</label></div>`).join("")}
  <button class="sm" id="addP">+ профиль</button></div>
+ <div class="card"><div class="h2">Самочувствие и вес</div><div class="mut" style="margin-bottom:6px">Обычно отмечается прямо в тренировке. Здесь — все записи и дни без тренировок.</div><button class="sm" id="wellAll">❤️ Открыть</button></div>
  <div class="card"><div class="h2">Залы</div><div class="chips">${st.gyms.map((g,i)=>`<span class="chip">${esc(g)} <span data-gx="${i}" style="cursor:pointer">✕</span></span>`).join("")}</div><button class="sm" id="addG" style="margin-top:8px">+ зал</button></div>
  <div class="card"><div class="h2">Данные</div><div class="mut" style="margin-bottom:8px">Бэкап, перенос на новый телефон, загрузка истории из заметок</div>
  <div class="row"><button class="sm" id="exp">⬇ Экспорт</button><label class="sm" style="flex:1"><span style="display:block;text-align:center;border:1px solid var(--line);border-radius:10px;padding:5px 9px;background:var(--card2)">⬆ Импорт файла</span><input type="file" id="imp" accept=".json,application/json" style="display:none"></label></div>
@@ -672,6 +674,7 @@ function rMore(){$("#ttl").textContent="Настройки";const st=S.settings;
  <div class="card"><div class="h2">Упражнения</div><div class="mut" style="margin-bottom:6px">Карта мышц, техника, фото, замены</div><button class="sm" id="lib">Открыть справочник</button></div>
  <div class="card mut">Данные хранятся только на этом телефоне и работают без интернета. Делай экспорт для бэкапа.</div>`;
  $("#app").innerHTML=h;const A=$("#app");
+ A.querySelector("#wellAll").onclick=()=>{S.bodyDate=today();go("body")};
  A.querySelector("#pg").onchange=e=>{const p=prof();p.program=e.target.value;st.nextDay=st.nextDay||{};st.nextDay[p.id]=0;saveSettings();rMore();toast("Программа выбрана")};
  A.querySelectorAll("[data-pn]").forEach(i=>{i.oninput=()=>{st.profiles[+i.dataset.pn].name=i.value.trim()||"Без имени";renderProf()};i.onchange=()=>{saveSettings();toast("Имя сохранено")}});
  A.querySelectorAll("[data-ph]").forEach(i=>i.onchange=()=>{st.profiles[+i.dataset.ph].hist=i.checked;saveSettings()});
