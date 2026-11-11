@@ -31,7 +31,7 @@ main{padding:12px 12px 90px;max-width:640px;margin:0 auto}
 .chip.on{background:var(--acc);color:#111;border-color:var(--acc)}
 .mchip{font-size:11px;padding:2px 7px;border-radius:999px;background:#2a2f3a;color:#c9cfdb}
 nav{position:fixed;bottom:0;left:0;right:0;background:#12151b;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
-nav button{flex:1;border:0;border-radius:0;background:none;padding:10px 0 12px;font-size:12px;color:var(--mut)}
+nav button{flex:1;min-width:0;border:0;border-radius:0;background:none;padding:10px 0 12px;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--mut)}
 nav button b{display:block;font-size:19px;line-height:1.2}
 nav button.on{color:var(--acc)}
 .ex-h{display:flex;align-items:flex-start;gap:8px}
@@ -360,10 +360,10 @@ let stT;function setStatus(t){const el=$("#st");if(el){el.textContent=t;clearTim
 function toast(t){const d=document.createElement("div");d.textContent=t;d.style.cssText="position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#333;color:#fff;padding:8px 14px;border-radius:10px;z-index:50;font-size:14px";document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
 function sheet(html,onMount){const r=$("#sheetRoot");r.innerHTML='<div class="sheet"><div>'+html+'</div></div>';const s=r.firstChild;s.addEventListener("click",e=>{if(e.target===s)closeSheet()});onMount&&onMount(s);}
 function closeSheet(){$("#sheetRoot").innerHTML=""}
-const TABS=[["today","🏋️","Тренировка"],["log","📒","Журнал"],["prog","📈","Прогресс"],["body","❤️","Самочувствие"],["more","⚙️","Ещё"]];
+const TABS=[["today","🏋️","Тренировка"],["log","📒","Журнал"],["prog","📈","Прогресс"],["food","🍽️","Питание"],["body","❤️","Здоровье"],["more","⚙️","Ещё"]];
 function renderNav(){$("#nav").innerHTML=TABS.map(t=>`<button class="${S.tab===t[0]?"on":""}" data-t="${t[0]}"><b>${t[1]}</b>${t[2]}</button>`).join("");$("#nav").querySelectorAll("button").forEach(b=>b.onclick=()=>go(b.dataset.t))}
 function renderProf(){const sel=$("#profSel");sel.innerHTML=S.settings.profiles.map(p=>`<option value="${p.id}" ${p.id===S.settings.active?"selected":""}>${esc(p.name)}</option>`).join("");sel.onchange=()=>{S.settings.active=sel.value;S.cur=null;saveSettings();go(S.tab)}}
-function go(t){if(!TABS.find(x=>x[0]===t))t="today";S.tab=t;if(location.hash.slice(1)!==t){try{history.replaceState(null,"","#"+t)}catch(e){}}renderNav();({today:rToday,log:rLog,prog:rProg,body:rBody,more:rMore})[t]();window.scrollTo(0,0)}
+function go(t){if(!TABS.find(x=>x[0]===t))t="today";S.tab=t;if(location.hash.slice(1)!==t){try{history.replaceState(null,"","#"+t)}catch(e){}}renderNav();({today:rToday,log:rLog,prog:rProg,food:rFood,body:rBody,more:rMore})[t]();window.scrollTo(0,0)}
 window.addEventListener("hashchange",()=>{const t=location.hash.slice(1);if(t&&t!==S.tab)go(t)});
 /* ===================== SVG: карта мышц ===================== */
 function bodySVG(side,hl,sec){const on=k=>hl.includes(k)?"#f59e0b":(sec&&sec.includes(k)?"#8f6420":"#3a404d");
@@ -563,7 +563,7 @@ function calcCard(p){const lw=(S.metrics.filter(x=>x.profile===p.id&&x.weight).s
  <div style="margin-top:8px"><div class="mut">Цель</div><div class="chips" id="cg">${Object.keys(GOALN).map(g=>`<span class="chip ${(c.goal||"keep")===g?"on":""}" data-g="${g}">${GOALN[g]}</span>`).join("")}</div></div>
  <div id="cres" style="margin-top:10px"></div>
  <div class="mut" style="margin-top:6px">Формула Миффлина — Сан-Жеора. Это стартовая цифра: 2 недели ешь эту норму, сравни средний вес за неделю и поправь на 150–200 ккал.</div></div>`}
-function bindCalc(A,p){const c=p.calc=p.calc||{};c.sex=c.sex||"m";c.goal=c.goal||"keep";c.act=c.act||1.55;
+function bindCalc(A,p,onDone){const c=p.calc=p.calc||{};c.sex=c.sex||"m";c.goal=c.goal||"keep";c.act=c.act||1.55;
  if(c.w==null){const v=num(A.querySelector("#cw").value);if(v)c.w=v}
  const draw=()=>{const r=kcalCalc(c.sex,num(c.age),num(p.height),num(c.w),+c.act);const el=A.querySelector("#cres");
   if(!r){el.innerHTML='<div class="mut">Заполни возраст, рост и вес.</div>';return}
@@ -572,7 +572,7 @@ function bindCalc(A,p){const c=p.calc=p.calc||{};c.sex=c.sex||"m";c.goal=c.goal|
   ${r.rows.map(x=>`<tr style="${x.k===c.goal?"font-weight:700;background:rgba(37,99,235,.12)":""}"><td style="padding:5px 4px">${GOALN[x.k]}</td><td>${x.kc}</td><td>${x.p}</td><td>${x.f}</td><td>${x.c}</td></tr>`).join("")}</table>
   <div class="mut" style="margin-top:4px">Цель «${GOALN[c.goal]}»: ${GOALT[c.goal]}. Белок, жиры, углеводы — граммы в день.</div>`;
   const t=r.rows.find(x=>x.k===c.goal);c.target={kcal:t.kc,protein:t.p}};
- const save=()=>saveSettings();
+ let tm=null;const save=()=>{saveSettings();if(onDone){clearTimeout(tm);tm=setTimeout(()=>{const y=window.scrollY;onDone();try{window.scrollTo(0,y)}catch(e){}},50)}};
  A.querySelectorAll("#cs [data-s]").forEach(x=>x.onclick=()=>{c.sex=x.dataset.s;A.querySelectorAll("#cs [data-s]").forEach(y=>y.classList.toggle("on",y===x));draw();save()});
  A.querySelectorAll("#cg [data-g]").forEach(x=>x.onclick=()=>{c.goal=x.dataset.g;A.querySelectorAll("#cg [data-g]").forEach(y=>y.classList.toggle("on",y===x));draw();save()});
  A.querySelector("#ca").oninput=e=>{c.age=num(e.target.value);draw()};A.querySelector("#ca").onchange=save;
@@ -580,25 +580,70 @@ function bindCalc(A,p){const c=p.calc=p.calc||{};c.sex=c.sex||"m";c.goal=c.goal|
  A.querySelector("#cw").oninput=e=>{c.w=num(e.target.value);draw()};A.querySelector("#cw").onchange=save;
  A.querySelector("#cact").onchange=e=>{c.act=+e.target.value;draw();save()};
  draw()}
-function rBody(){$("#ttl").textContent="Самочувствие";const p=prof();const d=S.bodyDate||today();
+/* ===================== Экран: питание ===================== */
+function rFood(){$("#ttl").textContent="Питание";const p=prof();const d=S.foodDate||today();
+ const m=S.metrics.find(x=>x.profile===p.id&&x.date===d)||{profile:p.id,date:d,tags:[]};
+ const t=(p.calc&&p.calc.target)||null;const c=p.calc||{};
+ const meals=m.meals||[];
+ const tot={kcal:m.kcal??0,protein:m.protein??0,fat:m.fat??0,carbs:m.carbs??0};
+ const bar=(v,goal,col)=>goal?`<div style="height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:4px"><div style="height:100%;width:${Math.min(100,Math.round(v/goal*100))}%;background:${v>goal*1.05?"#ef4444":col}"></div></div>`:"";
+ const goalRow=r=>r?(()=>{const R=kcalCalc(c.sex,num(c.age),num(p.height),num(c.w),+c.act);return R?R.rows.find(x=>x.k===c.goal):null})():null;
+ const G=goalRow(t);
+ let h=`<div class="card"><div class="row"><input type="date" id="fd" value="${d}"></div>
+ <div style="margin-top:10px"><div class="row" style="justify-content:space-between"><b>Калории</b><span>${Math.round(tot.kcal)}${G?" / "+G.kc:""} ккал</span></div>${bar(tot.kcal,G&&G.kc,"#2563eb")}</div>
+ <div style="margin-top:8px"><div class="row" style="justify-content:space-between"><span>Белок</span><span>${Math.round(tot.protein)}${G?" / "+G.p:""} г</span></div>${bar(tot.protein,G&&G.p*1.25,"#16a34a")}</div>
+ <div class="row" style="margin-top:8px;justify-content:space-between"><span class="mut">Жиры ${Math.round(tot.fat)}${G?" / "+G.f:""} г</span><span class="mut">Углеводы ${Math.round(tot.carbs)}${G?" / "+G.c:""} г</span></div>
+ ${G?"":`<div class="mut" style="margin-top:8px">Заполни калькулятор ниже — появится дневная норма.</div>`}</div>
+ <div class="card"><div class="h2">Добавить приём пищи</div>
+ <input id="mn" placeholder="Что съел (необязательно)">
+ <div class="row" style="margin-top:8px"><div><div class="mut">Ккал</div><input inputmode="decimal" id="mk"></div><div><div class="mut">Белок</div><input inputmode="decimal" id="mp"></div><div><div class="mut">Жиры</div><input inputmode="decimal" id="mf"></div><div><div class="mut">Углев.</div><input inputmode="decimal" id="mc"></div></div>
+ <button class="pri" id="madd" style="width:100%;margin-top:10px">+ Добавить</button>
+ ${meals.length?`<div style="margin-top:10px">${meals.map((x,i)=>`<div class="list-i row" style="justify-content:space-between"><div><b>${esc(x.name||"Приём "+(i+1))}</b> <span class="mut">${x.time||""}</span><div class="mut">${x.kcal||0} ккал · Б ${x.protein||0} · Ж ${x.fat||0} · У ${x.carbs||0}</div></div><button class="sm" data-mdel="${i}">✕</button></div>`).join("")}</div>`:""}
+ </div>
+ ${weekCard(p,G)}
+ ${calcCard(p)}`;
+ $("#app").innerHTML=h;const A=$("#app");bindCalc(A,p,()=>rFood());
+ A.querySelector("#fd").onchange=e=>{S.foodDate=e.target.value;rFood()};
+ const recalc=()=>{const s=k=>Math.round((m.meals||[]).reduce((a,x)=>a+(num(x[k])||0),0)*10)/10;m.kcal=s("kcal");m.protein=s("protein");m.fat=s("fat");m.carbs=s("carbs")};
+ const persist=async()=>{if(!S.metrics.includes(m))S.metrics.push(m);await saveMetric(JSON.parse(JSON.stringify(m)));rFood()};
+ A.querySelector("#madd").onclick=async()=>{const g=id=>num(A.querySelector(id).value);const x={name:A.querySelector("#mn").value.trim(),kcal:g("#mk"),protein:g("#mp"),fat:g("#mf"),carbs:g("#mc"),time:new Date().toTimeString().slice(0,5)};
+  if(!x.kcal&&!x.protein){toast("Введи хотя бы калории или белок");return}
+  if(!x.kcal)x.kcal=Math.round((x.protein||0)*4+(x.fat||0)*9+(x.carbs||0)*4);
+  if(!m.meals&&(m.kcal||m.protein))m.meals=[{name:"Ранее за день",kcal:m.kcal||0,protein:m.protein||0,fat:m.fat||0,carbs:m.carbs||0,time:""}];
+  m.meals=(m.meals||[]).concat(x);recalc();await persist()};
+ A.querySelectorAll("[data-mdel]").forEach(b=>b.onclick=async()=>{m.meals.splice(+b.dataset.mdel,1);recalc();await persist()})}
+function weekCard(p,G){const ms=S.metrics.filter(x=>x.profile===p.id);const day=k=>{const dt=new Date();dt.setDate(dt.getDate()-k);return dt.toISOString().slice(0,10)};
+ const span=(a,b)=>{const ds=[];for(let k=a;k<b;k++)ds.push(day(k));const rows=ms.filter(x=>ds.includes(x.date));const avg=f=>{const v=rows.map(x=>num(x[f])).filter(v=>v);return v.length?{v:v.reduce((s,x)=>s+x,0)/v.length,n:v.length}:null};return{kcal:avg("kcal"),protein:avg("protein"),weight:avg("weight")}};
+ const w1=span(0,7),w0=span(7,14);
+ if(!w1.kcal&&!w1.weight)return`<div class="card"><div class="h2">Неделя</div><div class="mut">Записывай еду здесь и утренний вес во вкладке «Здоровье» — через неделю тут появятся средние и подсказка, попадаешь ли ты в цель.</div></div>`;
+ let hint="";
+ if(w1.weight&&w0.weight&&w1.weight.n>=3&&w0.weight.n>=3){const dw=w1.weight.v-w0.weight.v,pct=dw/w0.weight.v*100,goal=(p.calc||{}).goal||"keep";
+  const ok=goal==="cut"?pct<=-0.4&&pct>=-0.9:goal==="bulk"?dw>=0.1&&dw<=0.45:Math.abs(pct)<0.3;
+  let adv="";if(!ok){if(goal==="cut")adv=pct>-0.4?"Худеешь медленнее цели — убери 150–200 ккал в день.":"Худеешь слишком быстро — добавь 150–200 ккал, иначе уйдут мышцы.";else if(goal==="bulk")adv=dw<0.1?"Вес не растёт — добавь 150–200 ккал.":"Набираешь слишком быстро — убери 150–200 ккал, лишнее уйдёт в жир.";else adv=dw>0?"Вес растёт — убери 150 ккал.":"Вес падает — добавь 150 ккал."}
+  hint=`<div style="margin-top:8px">Вес за неделю: <b>${dw>0?"+":""}${dw.toFixed(1)} кг</b> (${pct>0?"+":""}${pct.toFixed(1)}%). Цель «${GOALN[goal]}»: ${GOALT[goal]}.</div><div style="margin-top:4px;color:${ok?"#16a34a":"#f59e0b"}">${ok?"Темп в норме, ничего не меняй.":adv}</div>`}
+ else hint=`<div class="mut" style="margin-top:8px">Для подсказки нужно хотя бы 3 утренних взвешивания за эту и за прошлую неделю.</div>`;
+ const f=(a,u,dg)=>a?`${a.v.toFixed(dg)} ${u} <span class="mut">(${a.n} дн.)</span>`:"—";
+ return`<div class="card"><div class="h2">Последние 7 дней</div>
+ <div>Калории в среднем: ${f(w1.kcal,"ккал",0)}${G?` <span class="mut">· норма ${G.kc}</span>`:""}</div>
+ <div>Белок в среднем: ${f(w1.protein,"г",0)}</div>
+ <div>Вес в среднем: ${f(w1.weight,"кг",1)}</div>${hint}</div>`}
+function rBody(){$("#ttl").textContent="Здоровье";const p=prof();const d=S.bodyDate||today();
  const m=S.metrics.find(x=>x.profile===p.id&&x.date===d)||{profile:p.id,date:d,tags:[]};
  const list=S.metrics.filter(x=>x.profile===p.id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);
  let h=`<div class="card"><div class="row"><input type="date" id="bd" value="${d}"></div>
  <div class="row" style="margin-top:8px"><div><div class="mut">Вес, кг</div><input inputmode="decimal" id="bw" value="${m.weight??""}"></div><div><div class="mut">Рост, см</div><input inputmode="numeric" id="bh" value="${p.height??""}"></div></div>
  <div class="row" style="margin-top:8px"><div><div class="mut">Сон, ч</div><input inputmode="decimal" id="bs" value="${m.sleep??""}"></div><div><div class="mut">Качество сна 1–5</div><input inputmode="numeric" id="bq" value="${m.sleepQ??""}"></div></div>
- <div class="row" style="margin-top:8px"><div><div class="mut">Ккал</div><input inputmode="numeric" id="bk" value="${m.kcal??""}"></div><div><div class="mut">Белок, г</div><input inputmode="numeric" id="bp" value="${m.protein??""}"></div></div>
  <div style="margin-top:8px"><div class="mut">Состояние 1–5</div><div class="chips" id="mood">${[1,2,3,4,5].map(i=>`<span class="chip ${m.mood===i?"on":""}" data-m="${i}">${i}</span>`).join("")}</div></div>
  <div style="margin-top:8px"><div class="mut">Пометки</div><div class="chips" id="tags">${TAGS.map(t=>`<span class="chip ${(m.tags||[]).includes(t)?"on":""}" data-t="${t}">${t}</span>`).join("")}</div></div>
  <textarea id="bn" placeholder="Заметка" style="margin-top:8px">${esc(m.note||"")}</textarea>
  <button class="pri" id="bsave" style="width:100%;margin-top:10px">Сохранить</button></div>
-${calcCard(p)}
+ <div class="card mut">Калории, белок и калькулятор нормы — на вкладке «Питание».</div>
  <div class="card"><div class="h2">Последние записи</div>${list.length?list.map(x=>`<div class="list-i"><b>${fmtD(x.date)}</b> <span class="mut">${x.weight?x.weight+" кг · ":""}${x.sleep?"сон "+x.sleep+" ч · ":""}${x.mood?"сост. "+x.mood:""}</span><div class="chips">${(x.tags||[]).map(t=>`<span class="tag">${t}</span>`).join("")}</div></div>`).join(""):'<div class="mut">Пока нет записей.</div>'}</div>`;
- $("#app").innerHTML=h;const A=$("#app");bindCalc(A,p);
- {const t=p.calc&&p.calc.target;if(t&&(m.kcal||m.protein)){const n=document.createElement("div");n.className="mut";n.style.marginTop="6px";n.textContent=`За ${fmtD(d)}: ${m.kcal??"—"} из ${t.kcal} ккал · белок ${m.protein??"—"} из ${t.protein} г`;A.querySelector("#bsave").before(n)}}
+ $("#app").innerHTML=h;const A=$("#app");
  A.querySelector("#bd").onchange=e=>{S.bodyDate=e.target.value;rBody()};
  A.querySelectorAll("[data-m]").forEach(c=>c.onclick=()=>{m.mood=+c.dataset.m;A.querySelectorAll("[data-m]").forEach(x=>x.classList.toggle("on",x===c))});
  A.querySelectorAll("[data-t]").forEach(c=>c.onclick=()=>{m.tags=m.tags||[];const t=c.dataset.t;m.tags=m.tags.includes(t)?m.tags.filter(x=>x!==t):m.tags.concat(t);c.classList.toggle("on")});
- A.querySelector("#bsave").onclick=async()=>{Object.assign(m,{weight:num(A.querySelector("#bw").value),sleep:num(A.querySelector("#bs").value),sleepQ:num(A.querySelector("#bq").value),kcal:num(A.querySelector("#bk").value),protein:num(A.querySelector("#bp").value),note:A.querySelector("#bn").value});
+ A.querySelector("#bsave").onclick=async()=>{Object.assign(m,{weight:num(A.querySelector("#bw").value),sleep:num(A.querySelector("#bs").value),sleepQ:num(A.querySelector("#bq").value),note:A.querySelector("#bn").value});
   const hh=num(A.querySelector("#bh").value);if(hh!==p.height){p.height=hh;saveSettings()}
   if(!S.metrics.includes(m))S.metrics.push(m);await saveMetric(JSON.parse(JSON.stringify(m)));rBody()}}
 /* ===================== Экран: ещё ===================== */
