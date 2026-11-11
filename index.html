@@ -363,7 +363,9 @@ function closeSheet(){$("#sheetRoot").innerHTML=""}
 const TABS=[["today","🏋️","Тренировка"],["log","📒","Журнал"],["prog","📈","Прогресс"],["food","🍽️","Питание"],["body","❤️","Здоровье"],["more","⚙️","Ещё"]];
 function renderNav(){$("#nav").innerHTML=TABS.map(t=>`<button class="${S.tab===t[0]?"on":""}" data-t="${t[0]}"><b>${t[1]}</b>${t[2]}</button>`).join("");$("#nav").querySelectorAll("button").forEach(b=>b.onclick=()=>go(b.dataset.t))}
 function renderProf(){const sel=$("#profSel");sel.innerHTML=S.settings.profiles.map(p=>`<option value="${p.id}" ${p.id===S.settings.active?"selected":""}>${esc(p.name)}</option>`).join("");sel.onchange=()=>{S.settings.active=sel.value;S.cur=null;saveSettings();go(S.tab)}}
-function go(t){if(!TABS.find(x=>x[0]===t))t="today";S.tab=t;if(location.hash.slice(1)!==t){try{history.replaceState(null,"","#"+t)}catch(e){}}renderNav();({today:rToday,log:rLog,prog:rProg,food:rFood,body:rBody,more:rMore})[t]();window.scrollTo(0,0)}
+function scrollKey(t){return t==="today"?"today:"+(S.cur?S.cur.id:"list"):t}
+function go(t){if(!TABS.find(x=>x[0]===t))t="today";S.scroll=S.scroll||{};if(S.tab)S.scroll[scrollKey(S.tab)]=window.scrollY;const same=S.tab===t;S.tab=t;if(location.hash.slice(1)!==t){try{history.replaceState(null,"","#"+t)}catch(e){}}renderNav();({today:rToday,log:rLog,prog:rProg,food:rFood,body:rBody,more:rMore})[t]();
+ const y=same?0:(S.scroll[scrollKey(t)]||0);window.scrollTo(0,y);if(y)requestAnimationFrame(()=>window.scrollTo(0,y))}
 window.addEventListener("hashchange",()=>{const t=location.hash.slice(1);if(t&&t!==S.tab)go(t)});
 /* ===================== SVG: карта мышц ===================== */
 function bodySVG(side,hl,sec){const on=k=>hl.includes(k)?"#f59e0b":(sec&&sec.includes(k)?"#8f6420":"#3a404d");
