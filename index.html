@@ -127,22 +127,163 @@ const LIB={
  crunch:{n:"Скручивания",m:["abs"],t:["Лёжа, поясница прижата.","Скручивайся к тазу.","Медленно вниз."],alt:["hang_raise","cable_crunch"]},
  cable_crunch:{n:"Скручивания на блоке",m:["abs"],t:["На коленях, канат у головы.","Скручивайся вниз.","Без участия рук."],alt:["crunch"]}
 };
+/* ===== Доп. упражнения (женские программы, ягодицы) ===== */
+Object.assign(LIB,{
+ hip_thrust:{n:"Ягодичный мост со штангой (хип-траст)",m:["glutes","hams"],t:["Лопатки на краю скамьи, штанга на сгибе бёдер через мягкую накладку.","Стопы на ширине плеч, голени вертикальны в верхней точке.","Подними таз до прямой линии плечи–колени, сожми ягодицы на 1 с.","Опускай таз, не касаясь пола, и сразу следующий повтор."],alt:["glute_bridge","kickback"]},
+ glute_bridge:{n:"Ягодичный мост с пола",m:["glutes","hams"],t:["Лёжа на спине, стопы ближе к тазу, вес на пятках.","Поднимай таз, толкаясь пятками, до прямой линии.","Пауза 1–2 с наверху, медленно вниз."],alt:["hip_thrust","kickback"]},
+ bss:{n:"Болгарские выпады",m:["quads","glutes"],t:["Задняя нога носком на скамье, передняя — в большом шаге вперёд.","Опускайся вертикально вниз, пока заднее колено почти не коснётся пола.","Толкайся пяткой передней ноги, корпус слегка наклонён вперёд для акцента на ягодицу."],alt:["lunge","step_up","leg_press"]},
+ hip_abd:{n:"Отведение ног в тренажёре",m:["glutes"],t:["Сядь, спина прижата или с лёгким наклоном вперёд.","Разводи колени в стороны до упора, пауза 1 с.","Возвращай медленно, не бросая вес."],alt:["kickback","glute_bridge"]},
+ kickback:{n:"Отведение ноги назад в кроссовере",m:["glutes"],t:["Манжета на щиколотке, лёгкий наклон вперёд, держись за стойку.","Отводи прямую ногу назад-вверх за счёт ягодицы.","Не прогибай поясницу; пауза наверху."],alt:["hip_abd","glute_bridge"]},
+ step_up:{n:"Зашагивания на тумбу",m:["quads","glutes"],t:["Тумба на высоте колена, гантели в руках.","Ставь всю стопу на тумбу и поднимайся за счёт передней ноги.","Не отталкивайся задней ногой; спускайся медленно."],alt:["bss","lunge"]},
+ assist_pull:{n:"Подтягивания в гравитроне",m:["lats","biceps","midback"],t:["Колени на платформе, хват чуть шире плеч.","Тяни грудь к рукоятям, сводя лопатки.","Опускайся до полного выпрямления рук."],alt:["lat_pulldown","pullup"]},
+ db_rdl:{n:"Румынская тяга с гантелями",m:["hams","glutes","lowback"],t:["Гантели перед бёдрами, колени слегка согнуты.","Отводи таз назад, гантели скользят вдоль ног.","Опускай до растяжения задней поверхности бедра, спина ровная, затем выпрямись."],alt:["rdl","hyper"]},
+ upright:{n:"Протяжка (тяга к подбородку)",m:["sdelt","traps"],t:["Хват на ширине плеч или шире.","Тяни локтями вверх до уровня плеч, не выше.","Гриф близко к телу, без рывка корпусом."],alt:["lat_raise","cable_lat"]},
+ front_raise:{n:"Подъём гантелей перед собой",m:["fdelt"],t:["Гантели перед бёдрами, локти слегка согнуты.","Поднимай до уровня глаз без раскачки.","Медленно опускай."],alt:["db_ohp"]}
+});
+/* ===== Подробности по мышцам и технике ===== */
+const INFO={
+ bench:{p:["chest"],s:["fdelt","triceps"],feel:"Растяжение в груди внизу, жжение в груди и трицепсе вверху.",err:["Отрыв таза от скамьи","Локти разведены под 90° — нагрузка уходит в плечи","Отбив грифа от груди"],tip:"Вдох и задержка перед опусканием, выдох после прохождения самой тяжёлой точки."},
+ db_bench:{p:["chest"],s:["fdelt","triceps"],feel:"Глубокое растяжение груди внизу, сокращение груди вверху.",err:["Слишком короткая амплитуда","Гантели «падают» вниз без контроля"],tip:"Опускай 2–3 с, жми мощно. Гантели вверху над плечами, не над лицом."},
+ incline_db:{p:["chest"],s:["fdelt","triceps"],feel:"Верх груди под ключицами.",err:["Слишком крутой наклон (45°+) — работают плечи","Плечи поднимаются к ушам"],tip:"Наклон 20–30°. Лопатки сведены и прижаты к скамье весь подход."},
+ incline_bb:{p:["chest"],s:["fdelt","triceps"],feel:"Верх груди.",err:["Гриф опускается на шею или середину груди","Отрыв таза"],tip:"Касание чуть ниже ключиц, траектория вертикальная."},
+ machine_chest:{p:["chest"],s:["triceps","fdelt"],feel:"Грудь, без нагрузки на стабилизаторы.",err:["Сиденье слишком высоко — работают плечи","Полная блокировка локтей"],tip:"Подходит для добивки после штанги и при боли в плечах."},
+ fly:{p:["chest"],s:["fdelt"],feel:"Сильное растяжение груди внизу.",err:["Сгибание рук — превращается в жим","Слишком низкое опускание с болью в плече"],tip:"Думай «обнять бочку». Вес вторичен, важна амплитуда."},
+ pec_deck:{p:["chest"],s:[],feel:"Середина груди в сведении.",err:["Плечи уходят вперёд","Рывки"],tip:"Пауза 1 с в сведении, 3 с назад."},
+ cable_fly:{p:["chest"],s:["fdelt"],feel:"Внутренняя часть груди в сведении.",err:["Корпус качается","Руки сгибаются"],tip:"Низ груди — блоки сверху, верх груди — блоки снизу."},
+ ohp_machine:{p:["fdelt"],s:["sdelt","triceps"],feel:"Передние и средние дельты.",err:["Прогиб в пояснице","Неполная амплитуда"],tip:"Рукояти опускай до уровня подбородка."},
+ db_ohp:{p:["fdelt"],s:["sdelt","triceps"],feel:"Плечи спереди и сбоку.",err:["Сильный прогиб назад","Гантели сталкиваются вверху"],tip:"Сидя со спинкой 80–90°. Выдох на жим."},
+ bb_ohp:{p:["fdelt"],s:["sdelt","triceps","abs"],feel:"Плечи, трицепс, пресс держит корпус.",err:["Гриф идёт по дуге вокруг лица","Прогиб и выталкивание таза вперёд"],tip:"Ягодицы и пресс напряжены, голову убирай назад и возвращай под гриф."},
+ lat_raise:{p:["sdelt"],s:["traps"],feel:"Боковая часть плеча, жжение к концу подхода.",err:["Раскачка корпусом","Подъём выше плеч — включаются трапеции","Кисть выше локтя"],tip:"Веди локтями в стороны и чуть вперёд. Лёгкий вес, 12–20 чистых повторов."},
+ cable_lat:{p:["sdelt"],s:[],feel:"Средняя дельта с постоянной нагрузкой внизу.",err:["Тянет трапецией","Слишком большой вес"],tip:"Блок на уровне бедра, трос за спиной или перед телом."},
+ machine_lat:{p:["sdelt"],s:[],feel:"Средняя дельта.",err:["Рывки","Плечи поднимаются"],tip:"Пауза 1 с в верхней точке."},
+ rear_delt:{p:["rdelt"],s:["midback"],feel:"Задняя часть плеча.",err:["Сведение лопаток вместо работы дельт","Рывки"],tip:"Руки почти прямые, думай «развести локти», а не «свести лопатки»."},
+ face_pull:{p:["rdelt"],s:["midback","traps"],feel:"Задние дельты и верх спины.",err:["Тяга к груди вместо лица","Большой вес с наклоном корпуса"],tip:"Канат к глазам, кисти расходятся в стороны. Хорошо для здоровья плеч."},
+ rear_db:{p:["rdelt"],s:["midback"],feel:"Задняя дельта.",err:["Раскачка","Сгибание рук"],tip:"Наклон почти параллельно полу, лёгкие гантели."},
+ shrug:{p:["traps"],s:["forearm"],feel:"Верх трапеций у шеи.",err:["Вращение плечами","Короткая амплитуда"],tip:"Вверх к ушам, пауза 1–2 с, вниз до растяжения. Лямки, если хват сдаёт."},
+ shrug_db:{p:["traps"],s:["forearm"],feel:"Трапеции.",err:["Сгибание локтей"],tip:"Руки прямые, вертикально вверх-вниз."},
+ pullup:{p:["lats"],s:["biceps","midback","rdelt"],feel:"Широчайшие по бокам спины.",err:["Рывки ногами","Неполное опускание","Подбородок тянется вперёд"],tip:"Начинай с опускания лопаток, тяни локти к рёбрам."},
+ pullup_w:{p:["lats"],s:["biceps","midback"],feel:"Широчайшие.",err:["Короткая амплитуда ради веса"],tip:"Добавляй вес, только если делаешь чисто 8+ повторов без веса."},
+ lat_pulldown:{p:["lats"],s:["biceps","midback"],feel:"Широчайшие, в нижней точке сокращение под лопатками.",err:["Отклон назад больше 20°","Тяга за голову","Тянут руками, а не спиной"],tip:"Гриф к верху груди, локти вниз и назад."},
+ close_pulldown:{p:["lats"],s:["biceps","midback"],feel:"Низ широчайших.",err:["Раскачка корпусом"],tip:"В нижней точке пауза, вверху полностью вытягивайся."},
+ plate_row:{p:["midback"],s:["lats","rdelt","biceps"],feel:"Середина спины между лопатками.",err:["Отрыв груди от упора","Тянут бицепсом"],tip:"Своди лопатки в конце, пауза 1 с."},
+ cable_row:{p:["midback"],s:["lats","biceps","rdelt"],feel:"Середина спины.",err:["Качание корпусом","Круглая спина в растяжении"],tip:"Грудь вперёд, рукоять к низу живота."},
+ db_row:{p:["lats"],s:["midback","biceps"],feel:"Широчайшая со стороны тяги.",err:["Скручивание корпуса","Тяга к груди"],tip:"Тяни локоть к бедру по дуге."},
+ bb_row:{p:["midback"],s:["lats","biceps","lowback"],feel:"Вся спина.",err:["Круглая поясница","Корпус поднимается с каждым повтором"],tip:"Наклон 30–45°, гриф к низу живота."},
+ hyper:{p:["lowback"],s:["glutes","hams"],feel:"Поясница или ягодицы — зависит от варианта.",err:["Переразгибание вверху","Рывки"],tip:"Для ягодиц — круглая спина и упор ниже таза; для поясницы — ровная спина."},
+ bb_curl:{p:["biceps"],s:["forearm"],feel:"Бицепс.",err:["Раскачка корпусом","Локти уходят вперёд"],tip:"Локти прижаты, опускай 2–3 с до почти прямых рук."},
+ db_curl:{p:["biceps"],s:["forearm"],feel:"Бицепс, пик в верхней точке.",err:["Короткая амплитуда"],tip:"Супинируй кисть (мизинец вверх) по ходу подъёма."},
+ hammer:{p:["biceps"],s:["forearm"],feel:"Внешняя часть бицепса и предплечье.",err:["Раскачка"],tip:"Нейтральный хват, гантель к плечу."},
+ rope_hammer:{p:["biceps"],s:["forearm"],feel:"Бицепс и плечелучевая мышца.",err:["Локти гуляют"],tip:"Постоянное натяжение троса."},
+ machine_curl:{p:["biceps"],s:[],feel:"Бицепс без читинга.",err:["Неполная амплитуда"],tip:"Подмышка плотно к упору."},
+ cable_curl:{p:["biceps"],s:["forearm"],feel:"Бицепс с нагрузкой во всей амплитуде.",err:["Шаг назад и раскачка"],tip:"Пауза в верхней точке."},
+ pushdown:{p:["triceps"],s:[],feel:"Трицепс, особенно внизу.",err:["Локти отходят от корпуса","Наклон всем телом на рукоять"],tip:"Локти прижаты, полное разгибание с паузой."},
+ rope_pushdown:{p:["triceps"],s:[],feel:"Наружная головка трицепса.",err:["Локти гуляют"],tip:"Внизу разводи концы каната в стороны."},
+ overhead_tri:{p:["triceps"],s:[],feel:"Длинная головка трицепса, растяжение за головой.",err:["Локти разъезжаются","Прогиб в пояснице"],tip:"Глубокое растяжение — главное в этом упражнении."},
+ skull:{p:["triceps"],s:[],feel:"Трицепс.",err:["Локти расходятся","Опускание на лоб со стуком"],tip:"Опускай гриф за голову, плечи слегка наклонены назад."},
+ squat:{p:["quads","glutes"],s:["hams","lowback","abs"],feel:"Квадрицепс и ягодицы.",err:["Колени заваливаются внутрь","Отрыв пяток","Круглая спина внизу"],tip:"Вдох животом и задержка, колени по линии носков, спуск минимум до параллели."},
+ hack:{p:["quads"],s:["glutes"],feel:"Квадрицепс.",err:["Отрыв таза от спинки","Короткая амплитуда"],tip:"Стопы ниже — больше квадрицепса, выше — больше ягодиц."},
+ goblet:{p:["quads","glutes"],s:["abs"],feel:"Квадрицепс, ягодицы.",err:["Наклон корпуса вперёд","Колени внутрь"],tip:"Гантель у груди, локти между коленей внизу. Лучший вход в присед."},
+ leg_press:{p:["quads","glutes"],s:["hams"],feel:"Квадрицепс и ягодицы.",err:["Отрыв таза внизу","Блокировка коленей вверху"],tip:"Опускай, пока таз не начнёт подкручиваться; колени не выпрямляй полностью."},
+ rdl:{p:["hams","glutes"],s:["lowback","forearm"],feel:"Сильное растяжение задней поверхности бедра.",err:["Круглая спина","Сгибание коленей как в приседе","Гриф далеко от ног"],tip:"Таз назад, гриф скользит по бёдрам, опускай до растяжения, обычно до середины голени."},
+ deadlift:{p:["glutes","hams","lowback"],s:["quads","traps","forearm","lats"],feel:"Вся задняя поверхность тела.",err:["Круглая поясница","Таз поднимается раньше плеч","Рывок с пола"],tip:"Гриф над серединой стопы, вдох и упор животом, сначала «выжми пол ногами»."},
+ trap_dl:{p:["quads","glutes"],s:["hams","traps","lowback"],feel:"Ноги и спина, меньше поясницы.",err:["Круглая спина"],tip:"Безопаснее классической тяги для поясницы."},
+ lunge:{p:["quads","glutes"],s:["hams"],feel:"Квадрицепс и ягодица передней ноги.",err:["Колено передней ноги уходит внутрь","Короткий шаг"],tip:"Длинный шаг = больше ягодиц, короткий = больше квадрицепса."},
+ leg_ext:{p:["quads"],s:[],feel:"Квадрицепс, жжение над коленом.",err:["Рывки","Отрыв таза"],tip:"Пауза 1 с вверху, носки на себя."},
+ leg_curl:{p:["hams"],s:["calves"],feel:"Задняя поверхность бедра.",err:["Таз поднимается","Неполное сгибание"],tip:"Медленно опускай 2–3 с."},
+ calf_stand:{p:["calves"],s:[],feel:"Икроножная мышца.",err:["Пружинящие короткие повторы"],tip:"Пауза 2 с внизу в растяжении и 1 с вверху."},
+ calf_seat:{p:["calves"],s:[],feel:"Камбаловидная (нижняя часть икр).",err:["Короткая амплитуда"],tip:"Медленно, с паузой внизу."},
+ calf_press:{p:["calves"],s:[],feel:"Икры.",err:["Сгибание коленей"],tip:"Только носки на платформе, колени почти прямые."},
+ hang_raise:{p:["abs"],s:[],feel:"Низ пресса.",err:["Раскачка","Подъём только бёдер без скручивания таза"],tip:"Подкручивай таз к груди в конце движения."},
+ crunch:{p:["abs"],s:[],feel:"Прямая мышца живота.",err:["Тянут голову руками"],tip:"Скручивайся, приближая рёбра к тазу; выдох в сокращении."},
+ cable_crunch:{p:["abs"],s:[],feel:"Пресс.",err:["Сгибание в тазобедренном вместо скручивания"],tip:"Таз неподвижен, сгибается только корпус."},
+ upright:{p:["sdelt"],s:["traps"],feel:"Средняя дельта и трапеции.",err:["Подъём выше плеч — риск для плечевого сустава"],tip:"Широкий хват снижает нагрузку на плечи."},
+ front_raise:{p:["fdelt"],s:[],feel:"Передняя дельта.",err:["Раскачка"],tip:"Обычно не нужно, если делаешь жимы: передняя дельта и так нагружена."},
+ hip_thrust:{p:["glutes"],s:["hams"],feel:"Сильное сокращение ягодиц вверху.",err:["Прогиб в пояснице вместо разгибания таза","Подбородок вверх","Стопы слишком далеко — работают бёдра"],tip:"Взгляд вперёд, подбородок прижат. Наверху «подкрути» таз и сожми ягодицы."},
+ glute_bridge:{p:["glutes"],s:["hams"],feel:"Ягодицы.",err:["Прогиб в пояснице"],tip:"Можно с резинкой над коленями — больше средней ягодичной."},
+ bss:{p:["quads","glutes"],s:["hams"],feel:"Передняя нога: ягодица и квадрицепс.",err:["Слишком короткая стойка","Толчок задней ногой"],tip:"Наклон корпуса вперёд и дальняя стойка — акцент на ягодицу."},
+ hip_abd:{p:["glutes"],s:[],feel:"Боковая часть ягодиц (средняя ягодичная).",err:["Рывки","Неполное разведение"],tip:"Наклон корпуса вперёд усиливает работу ягодиц."},
+ kickback:{p:["glutes"],s:["hams"],feel:"Большая ягодичная.",err:["Прогиб поясницы","Мах ногой за счёт инерции"],tip:"Короткая пауза наверху, медленно вниз."},
+ step_up:{p:["quads","glutes"],s:["hams"],feel:"Ягодица и квадрицепс рабочей ноги.",err:["Толчок нижней ногой","Слишком низкая тумба"],tip:"Выше тумба — больше ягодиц."},
+ assist_pull:{p:["lats"],s:["biceps","midback"],feel:"Широчайшие.",err:["Неполная амплитуда"],tip:"Уменьшай помощь на 5 кг, когда делаешь верх диапазона."},
+ db_rdl:{p:["hams","glutes"],s:["lowback"],feel:"Растяжение задней поверхности бедра.",err:["Круглая спина"],tip:"Гантели вдоль ног, таз назад."}
+};
+function infoOf(id){const e=LIB[id]||{};const i=INFO[id];if(i)return i;return{p:e.m||[],s:[],feel:"",err:[],tip:""}}
+
 /* ===================== Программы ===================== */
 const PROGRAMS={
- ulppl5:{n:"ULPPL — 5 дней (масса/рельеф)",days:[
+ ulppl5:{n:"ULPPL — 5 дней (масса/рельеф)",g:"m",lvl:"Продвинутый",dpw:5,d:"Верх-сила, низ-сила, толкаю, тяну, ноги. Каждая мышца дважды в неделю, силовые и объёмные дни чередуются внутри недели. Составлена под Романа.",days:[
   {n:"1. Верх — сила",ex:[["bench",4,5,8,90,2.5],["plate_row",4,6,10,50,2.5],["ohp_machine",3,6,10,45,2.5],["pullup_w",3,6,10,5,2.5],["pushdown",2,8,12,34,2.5],["bb_curl",2,6,10,40,2.5]]},
   {n:"2. Низ — сила",ex:[["squat",4,6,8,40,5],["rdl",3,8,10,40,5],["leg_press",3,10,12,60,5],["leg_curl",3,10,12,32,2.5],["calf_stand",4,10,15,30,5],["hang_raise",3,10,15,0,0]]},
   {n:"3. Толкаю — объём",ex:[["incline_db",4,8,12,32.5,2.5],["bench",3,8,12,75,2.5],["fly",3,12,15,15,2.5],["lat_raise",4,12,20,10,1.25],["pushdown",3,10,15,20,2.5],["overhead_tri",2,12,15,12.5,2.5]]},
   {n:"4. Тяну — объём",ex:[["pullup",4,6,12,0,0],["close_pulldown",3,10,12,30,2.5],["plate_row",3,10,12,40,2.5],["rear_delt",3,12,15,59,2.5],["shrug",3,10,15,40,2.5],["bb_curl",3,8,12,35,2.5],["hammer",2,10,12,14,1.25]]},
   {n:"5. Ноги — объём",ex:[["deadlift",3,5,8,50,5],["lunge",3,8,10,0,2.5],["leg_ext",3,12,15,25,2.5],["leg_curl",3,12,15,27,2.5],["calf_seat",4,15,20,20,5],["hyper",3,12,15,0,0]]}
  ]},
- old4:{n:"Старый сплит (грудь/спина/плечи/бицепс)",days:[
+ phul:{n:"PHUL — сила + гипертрофия, 4 дня",g:"m",lvl:"Средний–продвинутый",dpw:4,d:"Схема Брэндона Кэмпбелла: два силовых дня (3–5 повторов) и два объёмных (8–12). Пн/Вт/Чт/Пт.",days:[
+  {n:"1. Верх — сила",ex:[["bench",4,3,5,"",2.5],["bb_row",4,3,5,"",2.5],["db_ohp",3,6,10,"",2.5],["lat_pulldown",3,6,10,"",2.5],["bb_curl",2,6,10,"",2.5],["skull",2,6,10,"",2.5]]},
+  {n:"2. Низ — сила",ex:[["squat",4,3,5,"",5],["deadlift",3,3,5,"",5],["leg_press",4,10,15,"",5],["leg_curl",4,6,10,"",2.5],["calf_stand",4,6,10,"",5]]},
+  {n:"3. Верх — гипертрофия",ex:[["incline_db",4,8,12,"",2.5],["fly",3,8,12,"",2.5],["cable_row",4,8,12,"",2.5],["db_row",3,8,12,"",2.5],["lat_raise",3,10,12,"",1.25],["db_curl",3,8,12,"",1.25],["rope_pushdown",3,8,12,"",2.5]]},
+  {n:"4. Низ — гипертрофия",ex:[["hack",3,8,12,"",5],["lunge",3,8,12,"",2.5],["leg_ext",3,10,15,"",2.5],["leg_curl",3,10,15,"",2.5],["calf_seat",4,8,12,"",5]]}
+ ]},
+ ppl6:{n:"Толкаю / Тяну / Ноги — 6 дней",g:"m",lvl:"Продвинутый",dpw:6,d:"Каждый день повторяется дважды в неделю: первый круг тяжелее (6–10), второй объёмнее (10–15). Нужен хороший сон и питание.",days:[
+  {n:"1. Толкаю A",ex:[["bench",4,6,8,"",2.5],["db_ohp",3,8,10,"",2.5],["incline_db",3,8,12,"",2.5],["lat_raise",4,12,20,"",1.25],["skull",3,8,12,"",2.5]]},
+  {n:"2. Тяну A",ex:[["pullup_w",4,6,10,"",2.5],["bb_row",3,6,10,"",2.5],["face_pull",3,12,15,"",2.5],["bb_curl",3,8,12,"",2.5],["hammer",2,10,12,"",1.25]]},
+  {n:"3. Ноги A",ex:[["squat",4,6,8,"",5],["rdl",3,8,10,"",5],["leg_press",3,10,12,"",5],["calf_stand",4,10,15,"",5],["hang_raise",3,10,15,0,0]]},
+  {n:"4. Толкаю B",ex:[["incline_bb",3,8,12,"",2.5],["machine_chest",3,10,12,"",2.5],["cable_fly",3,12,15,"",2.5],["cable_lat",3,12,20,"",1.25],["rope_pushdown",3,10,15,"",2.5],["overhead_tri",2,12,15,"",2.5]]},
+  {n:"5. Тяну B",ex:[["lat_pulldown",4,10,12,"",2.5],["cable_row",3,10,12,"",2.5],["rear_delt",3,12,15,"",2.5],["shrug",3,10,15,"",2.5],["cable_curl",3,10,15,"",2.5]]},
+  {n:"6. Ноги B",ex:[["deadlift",3,5,6,"",5],["bss",3,8,10,"",2.5],["leg_ext",3,12,15,"",2.5],["leg_curl",3,12,15,"",2.5],["calf_seat",4,15,20,"",5]]}
+ ]},
+ old4:{n:"Старый сплит (грудь/спина/плечи/бицепс)",g:"m",lvl:"—",dpw:4,d:"Твоя прежняя схема из заметок — для сравнения и на случай, если захочешь вернуться.",days:[
   {n:"Грудь",ex:[["incline_db",4,8,12,42.5,2.5],["bench",3,8,12,90,2.5],["fly",3,10,12,22.5,2.5],["pushdown",3,10,12,25,2.5]]},
   {n:"Спина",ex:[["pullup",5,8,15,0,0],["close_pulldown",3,10,12,33.75,2.5],["plate_row",3,10,12,45,2.5],["hyper",4,12,15,0,0]]},
   {n:"Плечи",ex:[["lat_raise",4,10,12,14,1.25],["db_ohp",4,8,12,32.5,2.5],["rear_delt",3,12,15,50,2.5],["shrug",3,12,15,45,2.5]]},
   {n:"Бицепс",ex:[["bb_curl",4,10,12,45,2.5],["db_curl",3,10,12,14,1.25],["machine_curl",3,10,12,50,2.5],["cable_curl",3,10,12,23.5,2.5]]}
+ ]},
+ ul4:{n:"Верх / Низ — 4 дня",g:"u",lvl:"Средний",dpw:4,d:"Классика для натуралов: каждая мышца дважды в неделю, 10–20 рабочих подходов на мышцу в неделю. Пн/Вт/Чт/Пт, 60 мин.",days:[
+  {n:"1. Верх A",ex:[["bench",4,6,8,"",2.5],["bb_row",4,6,8,"",2.5],["db_ohp",3,8,10,"",2.5],["lat_pulldown",3,8,12,"",2.5],["skull",2,10,12,"",2.5],["bb_curl",2,8,12,"",2.5]]},
+  {n:"2. Низ A",ex:[["squat",4,6,8,"",5],["rdl",3,8,10,"",5],["leg_press",3,10,12,"",5],["leg_curl",3,10,12,"",2.5],["calf_stand",4,10,15,"",5]]},
+  {n:"3. Верх B",ex:[["incline_db",3,8,12,"",2.5],["cable_row",3,10,12,"",2.5],["pullup",3,6,12,0,0],["lat_raise",4,12,20,"",1.25],["rope_pushdown",3,10,15,"",2.5],["hammer",3,10,12,"",1.25]]},
+  {n:"4. Низ B",ex:[["deadlift",3,5,6,"",5],["bss",3,8,10,"",2.5],["leg_ext",3,12,15,"",2.5],["leg_curl",3,12,15,"",2.5],["calf_seat",4,15,20,"",5],["hang_raise",3,10,15,0,0]]}
+ ]},
+ gzclp:{n:"GZCLP — сила, 4 тренировки по кругу",g:"u",lvl:"Новичок–средний",dpw:3,d:"Метод Коди Лефевера: T1 — тяжёлая база 5×3, T2 — 3×10, T3 — подсобка 3×15. Делай A1 → B1 → A2 → B2 по кругу, 3–4 раза в неделю. Отдых T1 3–5 мин.",days:[
+  {n:"A1",ex:[["squat",5,3,3,"",5],["bench",3,10,10,"",2.5],["lat_pulldown",3,15,20,"",2.5]]},
+  {n:"B1",ex:[["bb_ohp",5,3,3,"",2.5],["deadlift",3,10,10,"",5],["db_row",3,15,20,"",2.5]]},
+  {n:"A2",ex:[["bench",5,3,3,"",2.5],["squat",3,10,10,"",5],["lat_pulldown",3,15,20,"",2.5]]},
+  {n:"B2",ex:[["deadlift",5,3,3,"",5],["bb_ohp",3,10,10,"",2.5],["db_row",3,15,20,"",2.5]]}
+ ]},
+ fb3:{n:"Всё тело — 3 дня",g:"u",lvl:"Новичок / мало времени",dpw:3,d:"Пн/Ср/Пт, 45–60 мин. Подходит для старта, возвращения после перерыва и занятых недель.",days:[
+  {n:"A",ex:[["squat",3,6,10,"",5],["bench",3,6,10,"",2.5],["cable_row",3,8,12,"",2.5],["lat_raise",2,12,15,"",1.25],["hang_raise",2,10,15,0,0]]},
+  {n:"B",ex:[["rdl",3,8,10,"",5],["db_ohp",3,8,10,"",2.5],["lat_pulldown",3,8,12,"",2.5],["leg_press",3,10,12,"",5],["db_curl",2,10,12,"",1.25]]},
+  {n:"C",ex:[["goblet",3,8,12,"",2.5],["incline_db",3,8,12,"",2.5],["db_row",3,8,12,"",2.5],["leg_curl",3,10,12,"",2.5],["rope_pushdown",2,10,15,"",2.5]]}
+ ]},
+ fglute4:{n:"Ягодицы + всё тело — 4 дня",g:"f",lvl:"Средний",dpw:4,d:"Низ/верх/низ/верх: ягодицы и ноги дважды в неделю с хип-трастом и румынской тягой, верх тела — для осанки и пропорций. Пн/Вт/Чт/Пт, 50–60 мин.",days:[
+  {n:"1. Ягодицы",ex:[["hip_thrust",4,8,10,"",5],["rdl",3,8,10,"",2.5],["bss",3,10,12,"",1.25],["hip_abd",3,15,20,"",2.5],["kickback",2,12,15,"",1.25]]},
+  {n:"2. Верх",ex:[["lat_pulldown",3,8,12,"",2.5],["db_bench",3,8,12,"",1.25],["cable_row",3,10,12,"",2.5],["lat_raise",3,12,15,"",1],["cable_curl",2,10,15,"",2.5],["rope_pushdown",2,10,15,"",2.5]]},
+  {n:"3. Ноги + ягодицы",ex:[["squat",4,6,10,"",2.5],["leg_press",3,10,15,"",5],["step_up",3,10,12,"",1.25],["leg_curl",3,10,15,"",2.5],["glute_bridge",3,12,15,"",2.5],["calf_press",3,12,15,"",5]]},
+  {n:"4. Верх + пресс",ex:[["assist_pull",3,6,10,"",2.5],["db_ohp",3,8,12,"",1],["db_row",3,10,12,"",1.25],["pec_deck",2,12,15,"",2.5],["face_pull",3,12,15,"",2.5],["crunch",3,12,15,0,0]]}
+ ]},
+ ffb3:{n:"Всё тело с акцентом на ноги — 3 дня",g:"f",lvl:"Новичок",dpw:3,d:"Пн/Ср/Пт, 45–55 мин. Каждый день ноги и ягодицы + верх тела. Хороший старт, если раньше не занималась.",days:[
+  {n:"A",ex:[["goblet",3,10,12,"",2],["hip_thrust",3,10,12,"",5],["lat_pulldown",3,10,12,"",2.5],["db_bench",3,10,12,"",1],["hip_abd",2,15,20,"",2.5]]},
+  {n:"B",ex:[["db_rdl",3,10,12,"",1],["leg_press",3,12,15,"",5],["cable_row",3,10,12,"",2.5],["db_ohp",3,10,12,"",1],["crunch",3,12,15,0,0]]},
+  {n:"C",ex:[["bss",3,10,12,"",1],["glute_bridge",3,12,15,"",2.5],["assist_pull",3,6,10,"",2.5],["lat_raise",3,12,15,"",1],["kickback",2,12,15,"",1.25]]}
+ ]},
+ f5:{n:"Низ / верх / ягодицы — 5 дней",g:"f",lvl:"Средний–продвинутый",dpw:5,d:"Ноги+плечи, верх, ягодицы, верх, ноги. Ноги и ягодицы 3 раза в неделю — для тех, кто хочет максимальный акцент на нижнюю часть.",days:[
+  {n:"1. Ноги + плечи",ex:[["squat",4,8,10,"",2.5],["leg_press",3,10,12,"",5],["leg_curl",3,10,12,"",2.5],["db_ohp",3,10,12,"",1],["lat_raise",3,12,15,"",1]]},
+  {n:"2. Верх",ex:[["lat_pulldown",3,8,12,"",2.5],["db_row",3,8,12,"",1.25],["cable_fly",3,12,15,"",2.5],["cable_curl",2,10,15,"",2.5],["rope_pushdown",2,10,15,"",2.5]]},
+  {n:"3. Ягодицы",ex:[["hip_thrust",4,8,10,"",5],["rdl",3,8,10,"",2.5],["hyper",3,15,20,0,0],["hip_abd",3,15,20,"",2.5]]},
+  {n:"4. Верх + пресс",ex:[["db_bench",3,8,12,"",1],["cable_row",3,10,12,"",2.5],["lat_raise",3,12,15,"",1],["face_pull",3,12,15,"",2.5],["crunch",3,12,15,0,0]]},
+  {n:"5. Ноги",ex:[["bss",3,8,10,"",1],["goblet",3,10,12,"",2],["glute_bridge",3,12,15,"",2.5],["leg_ext",3,12,15,"",2.5],["calf_press",3,12,15,"",5]]}
+ ]},
+ fhome3:{n:"Дома с гантелями — 3 дня",g:"f",lvl:"Новичок",dpw:3,d:"Нужны пара гантелей (лучше разборных), коврик и стул/скамья. 40–50 мин.",days:[
+  {n:"A",ex:[["goblet",3,10,15,"",1],["glute_bridge",3,12,20,"",1],["db_row",3,10,12,"",1],["db_bench",3,10,12,"",1],["crunch",3,15,20,0,0]]},
+  {n:"B",ex:[["db_rdl",3,10,12,"",1],["bss",3,10,12,"",1],["db_ohp",3,10,12,"",1],["lat_raise",3,12,15,"",1],["db_curl",2,10,15,"",1]]},
+  {n:"C",ex:[["step_up",3,10,12,"",1],["glute_bridge",3,15,20,"",1],["db_row",3,10,12,"",1],["front_raise",2,12,15,"",1],["crunch",3,15,20,0,0]]}
  ]}
 };
+const PGROUP={m:"Мужские",f:"Женские",u:"Для всех"};
+function progOf(p){p=p||prof();if(p.program&&PROGRAMS[p.program])return p.program;
+ const fem=(p.calc&&p.calc.sex==="f")||(!p.calc&&p.id==="p2");
+ if(fem)return"fglute4";return PROGRAMS[S.settings.program]?S.settings.program:"ulppl5"}
+
 /* стартовые веса снижены ~на 10–15% (ноги ~на 30%): первые 2 недели запас 2–3 повтора, дальше двойная прогрессия */
 const TAGS=["креатин","болел","плохо спал","алкоголь","поел поздно","стресс","перерыв","дефицит"];
 /* ===== Сопоставление названий из заметок с упражнениями ===== */
@@ -225,7 +366,7 @@ function renderProf(){const sel=$("#profSel");sel.innerHTML=S.settings.profiles.
 function go(t){if(!TABS.find(x=>x[0]===t))t="today";S.tab=t;if(location.hash.slice(1)!==t){try{history.replaceState(null,"","#"+t)}catch(e){}}renderNav();({today:rToday,log:rLog,prog:rProg,body:rBody,more:rMore})[t]();window.scrollTo(0,0)}
 window.addEventListener("hashchange",()=>{const t=location.hash.slice(1);if(t&&t!==S.tab)go(t)});
 /* ===================== SVG: карта мышц ===================== */
-function bodySVG(side,hl){const on=k=>hl.includes(k)?"#f59e0b":"#3a404d";
+function bodySVG(side,hl,sec){const on=k=>hl.includes(k)?"#f59e0b":(sec&&sec.includes(k)?"#8f6420":"#3a404d");
  const F=side==="front";
  const parts=F?[
   ["ellipse",{cx:50,cy:14,rx:9,ry:11},"head"],
@@ -254,9 +395,15 @@ function bodySVG(side,hl){const on=k=>hl.includes(k)?"#f59e0b":"#3a404d";
 function exSheet(id,onSwap){const e=LIB[id];if(!e)return;const L=S.lib[id]||{};
  const photos=(L.photos||[]).map(p=>`<img class="ph" src="${p}" style="margin-bottom:8px">`).join("");
  sheet(`<div class="ex-h"><div class="t" style="font-size:17px">${esc(e.n)}</div><button class="sm" id="cx">✕</button></div>
- <div class="chips" style="margin:8px 0">${e.m.map(k=>`<span class="mchip">${M[k]}</span>`).join("")}</div>
- <div class="figs"><div>${bodySVG("front",e.m)}</div><div>${bodySVG("back",e.m)}</div></div>
+ ${(()=>{const I=infoOf(id);return`
+ <div class="mut" style="margin-top:8px">Основные мышцы</div><div class="chips" style="margin:4px 0">${I.p.map(k=>`<span class="mchip" style="background:#f59e0b;color:#111">${M[k]}</span>`).join("")}</div>
+ ${I.s.length?`<div class="mut">Помогают</div><div class="chips" style="margin:4px 0">${I.s.map(k=>`<span class="mchip" style="background:#8f6420;color:#fff">${M[k]}</span>`).join("")}</div>`:""}
+ <div class="figs"><div>${bodySVG("front",I.p,I.s)}</div><div>${bodySVG("back",I.p,I.s)}</div></div>
+ <div class="mut" style="text-align:center;margin-top:2px"><span style="color:#f59e0b">■</span> основные · <span style="color:#8f6420">■</span> помогают</div>
+ ${I.feel?`<div class="h2" style="margin-top:12px">Где должно чувствоваться</div><div>${esc(I.feel)}</div>`:""}
  <div class="h2" style="margin-top:12px">Техника</div><ol style="margin:0;padding-left:20px">${e.t.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
+ ${I.err.length?`<div class="h2" style="margin-top:12px">Частые ошибки</div><ul style="margin:0;padding-left:20px">${I.err.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
+ ${I.tip?`<div class="h2" style="margin-top:12px">Совет</div><div>${esc(I.tip)}</div>`:""}`})()}
  <div class="h2" style="margin-top:12px">Фото техники</div>${photos||'<div class="mut">Фото пока нет.</div>'}
  ${user&&user.isOwner&&user.isOwner()?`<label class="mut" style="display:block;margin-top:6px">Добавить фото (до 2): <input type="file" accept="image/*" id="phf"></label>`:""}
  ${onSwap?`<div class="h2" style="margin-top:12px">Замена</div><div class="chips">${e.alt.filter(a=>LIB[a]).map(a=>`<button class="sm" data-a="${a}">${esc(LIB[a].n)}</button>`).join("")}</div>`:""}`,
@@ -275,7 +422,7 @@ function lastText(id){const l=lastOf(id);if(!l)return"";const d=l.w.date.slice(8
 function suggest(spec){const[id,sets,lo,hi,start,inc]=spec;
  const app=S.workouts.filter(w=>w.profile===prof().id&&w.id!==(S.cur&&S.cur.id)).sort((a,b)=>b.date.localeCompare(a.date));
  const hist=[];for(const w of app){const e=w.ex.find(x=>x.id===id);if(e&&e.sets.some(s=>s.st!=="plan"))hist.push(e);if(hist.length>=2)break}
- if(!hist.length)return{w:start,why:"стартовый вес"};
+ if(!hist.length)return{w:start,why:start===""?"первая тренировка — подбери рабочий вес":"стартовый вес"};
  const last=hist[0];const ws=last.sets.filter(s=>s.st!=="plan");const done=ws.filter(s=>s.st==="done");
  const w=Math.max(...(done.length?done:ws).map(s=>num(s.w)??0))||start;
  const allTop=ws.length>=sets&&ws.every(s=>s.st==="done"&&num(s.r)>=hi);
@@ -287,8 +434,8 @@ function suggest(spec){const[id,sets,lo,hi,start,inc]=spec;
  if(missLo(hist[0]))return{w,why:"в прошлый раз не добрал — тот же вес, добери повторы"};
  return{w,why:"тот же вес, добавь повторы"}}
 /* ===================== Экран: тренировка ===================== */
-function newWorkout(dayIdx){const P=PROGRAMS[S.settings.program];const d=P.days[dayIdx];
- const w={id:"w"+Date.now().toString(36),profile:prof().id,date:today(),gym:S.settings.gyms[0]||"",program:S.settings.program,day:dayIdx,title:d.n,ex:d.ex.map(spec=>{const sg=suggest(spec);return{id:spec[0],spec,comment:"",why:sg.why,sets:Array.from({length:spec[1]},()=>({pw:sg.w,pr:spec[3],w:sg.w,r:"",st:"plan"}))}})};
+function newWorkout(dayIdx){const P=PROGRAMS[progOf()];const d=P.days[dayIdx];
+ const w={id:"w"+Date.now().toString(36),profile:prof().id,date:today(),gym:S.settings.gyms[0]||"",program:progOf(),day:dayIdx,title:d.n,ex:d.ex.map(spec=>{const sg=suggest(spec);return{id:spec[0],spec,comment:"",why:sg.why,sets:Array.from({length:spec[1]},()=>({pw:sg.w,pr:spec[3],w:sg.w,r:"",st:"plan"}))}})};
  S.workouts.push(w);S.cur=w;S.noAuto=false;S.settings.nextDay[prof().id]=(dayIdx+1)%P.days.length;saveSettings();saveWorkout(w);rToday()}
 function newCustom(tpl){const exs=tpl?tpl.ex.map(t=>{const spec=[t.id,t.sets,t.lo,t.hi,t.w??"",t.inc??2.5];const sg=suggest(spec);return{id:t.id,spec,comment:"",why:sg.why,sets:Array.from({length:t.sets},()=>({pw:sg.w,pr:t.hi,w:sg.w,r:"",st:"plan"}))}}):[];
  const w={id:"w"+Date.now().toString(36),profile:prof().id,date:today(),gym:S.settings.gyms[0]||"",program:tpl?"tpl":"custom",day:null,tpl:tpl?tpl.id:null,title:tpl?tpl.name:"Своя тренировка",ex:exs};
@@ -296,7 +443,7 @@ function newCustom(tpl){const exs=tpl?tpl.ex.map(t=>{const spec=[t.id,t.sets,t.l
 function saveTemplate(w){const st=S.settings;st.templates=st.templates||[];
  const ex=w.ex.map(e=>{const ws=e.sets.map(s=>num(s.w)).filter(x=>x!=null);const rs=e.sets.map(s=>num(s.r)||num(s.pr)).filter(x=>x);return{id:e.id,sets:e.sets.length,lo:e.spec?e.spec[2]:(rs.length?Math.min(...rs):8),hi:e.spec?e.spec[3]:(rs.length?Math.max(...rs):12),w:ws.length?ws[0]:null,inc:e.spec?e.spec[5]:2.5}});
  const ex0=st.templates.find(t=>t.name===w.title);if(ex0){ex0.ex=ex}else st.templates.push({id:"t"+Date.now().toString(36),name:w.title,ex});saveSettings();toast("Шаблон «"+w.title+"» сохранён")}
-function rToday(){$("#ttl").textContent="Тренировка";const P=PROGRAMS[S.settings.program];const p=prof();
+function rToday(){$("#ttl").textContent="Тренировка";const P=PROGRAMS[progOf()];const p=prof();
  const open=S.workouts.filter(w=>w.profile===p.id&&w.date===today()).sort((a,b)=>b.updated-a.updated)[0];
  if(!S.cur&&open&&!S.noAuto)S.cur=open;
  let h=ONLINE?"":`<div class="banner">Хранилище телефона недоступно: данные не сохранятся.</div>`;
@@ -456,7 +603,9 @@ ${calcCard(p)}
   if(!S.metrics.includes(m))S.metrics.push(m);await saveMetric(JSON.parse(JSON.stringify(m)));rBody()}}
 /* ===================== Экран: ещё ===================== */
 function rMore(){$("#ttl").textContent="Настройки";const st=S.settings;
- let h=`<div class="card"><div class="h2">Программа</div><select id="pg">${Object.entries(PROGRAMS).map(([k,v])=>`<option value="${k}" ${k===st.program?"selected":""}>${esc(v.n)}</option>`).join("")}</select>
+ let h=`<div class="card"><div class="h2">Программа — ${esc(prof().name)}</div><select id="pg">${["m","f","u"].map(g=>`<optgroup label="${PGROUP[g]}">${Object.entries(PROGRAMS).filter(([k,v])=>v.g===g).map(([k,v])=>`<option value="${k}" ${k===progOf()?"selected":""}>${esc(v.n)}</option>`).join("")}</optgroup>`).join("")}</select>
+ ${(()=>{const P=PROGRAMS[progOf()];return`<div style="margin-top:8px">${esc(P.d||"")}</div><div class="mut" style="margin-top:4px">${PGROUP[P.g]} · ${esc(P.lvl||"")} · ${P.dpw} дн./нед. · ${P.days.length} тренировок в цикле</div><div class="mut" style="margin-top:4px">${P.days.map(d=>esc(d.n)).join(" · ")}</div>`})()}
+ <div class="mut" style="margin-top:6px">Программа своя у каждого профиля. Переключи профиль вверху, чтобы выбрать программу для другого человека.</div>
  <div class="mut" style="margin-top:6px">Вес на будущий день считается сам: верх диапазона во всех подходах → +шаг; дважды не добрал → −10%.</div></div>
  <div class="card"><div class="h2">Профили</div>${st.profiles.map((p,i)=>`<div class="row" style="margin-bottom:8px"><input data-pn="${i}" value="${esc(p.name)}"><label class="mut" style="flex:0 0 auto"><input type="checkbox" data-ph="${i}" ${p.hist?"checked":""} style="width:auto"> история 2026</label></div>`).join("")}
  <button class="sm" id="addP">+ профиль</button></div>
@@ -467,7 +616,7 @@ function rMore(){$("#ttl").textContent="Настройки";const st=S.settings;
  <div class="card"><div class="h2">Упражнения</div><div class="mut" style="margin-bottom:6px">Карта мышц, техника, фото, замены</div><button class="sm" id="lib">Открыть справочник</button></div>
  <div class="card mut">Данные хранятся только на этом телефоне и работают без интернета. Делай экспорт для бэкапа.</div>`;
  $("#app").innerHTML=h;const A=$("#app");
- A.querySelector("#pg").onchange=e=>{st.program=e.target.value;st.nextDay={};saveSettings()};
+ A.querySelector("#pg").onchange=e=>{const p=prof();p.program=e.target.value;st.nextDay=st.nextDay||{};st.nextDay[p.id]=0;saveSettings();rMore();toast("Программа выбрана")};
  A.querySelectorAll("[data-pn]").forEach(i=>{i.oninput=()=>{st.profiles[+i.dataset.pn].name=i.value.trim()||"Без имени";renderProf()};i.onchange=()=>{saveSettings();toast("Имя сохранено")}});
  A.querySelectorAll("[data-ph]").forEach(i=>i.onchange=()=>{st.profiles[+i.dataset.ph].hist=i.checked;saveSettings()});
  A.querySelector("#addP").onclick=()=>{st.profiles.push({id:"p"+Date.now().toString(36),name:"Новый",height:null,hist:false});saveSettings();renderProf();rMore()};
