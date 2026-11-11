@@ -300,6 +300,8 @@ function rToday(){$("#ttl").textContent="Тренировка";const P=PROGRAMS[
  const open=S.workouts.filter(w=>w.profile===p.id&&w.date===today()).sort((a,b)=>b.updated-a.updated)[0];
  if(!S.cur&&open&&!S.noAuto)S.cur=open;
  let h=ONLINE?"":`<div class="banner">Хранилище телефона недоступно: данные не сохранятся.</div>`;
+ {let le=0;try{le=+localStorage.getItem("gd_lastExport")||0}catch(e){}const n=S.workouts.length;
+  if(n>=3&&Date.now()-le>14*864e5)h+=`<div class="banner">${le?"Последняя резервная копия больше 2 недель назад.":"Резервной копии ещё нет."} Сохрани: «Ещё» → «Данные» → «Экспорт».</div>`;}
  if(!S.cur||S.cur.profile!==p.id){const nd=(S.settings.nextDay||{})[p.id]||0;
   const started=S.workouts.filter(w=>w.profile===p.id&&!w.finished).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
   if(started.length)h+=`<div class="card"><div class="h2">Незавершённые</div>${started.map(w=>`<button style="width:100%;text-align:left;margin-bottom:8px" data-open="${w.id}">${esc(w.title)}<div class="mut">${fmtD(w.date)}${w.gym?" · "+esc(w.gym):""}</div></button>`).join("")}</div>`;
@@ -435,13 +437,14 @@ function rMore(){$("#ttl").textContent="Настройки";const st=S.settings;
  A.querySelectorAll("[data-gx]").forEach(x=>x.onclick=()=>{st.gyms.splice(+x.dataset.gx,1);saveSettings();rMore()});
  A.querySelector("#addG").onclick=()=>gymDialog(()=>rMore());
  A.querySelector("#lib").onclick=()=>pickEx(id=>exSheet(id));
- A.querySelector("#exp").onclick=async()=>{const all=await LDB.all();const blob=new Blob([JSON.stringify({app:"gym-diary",v:1,exported:new Date().toISOString(),data:all})],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="gym-diary-"+today()+".json";document.body.appendChild(a);a.click();a.remove();toast("Файл сохранён в Загрузки")};
+ A.querySelector("#exp").onclick=async()=>{const all=await LDB.all();const blob=new Blob([JSON.stringify({app:"gym-diary",v:1,exported:new Date().toISOString(),data:all})],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="gym-diary-"+today()+".json";document.body.appendChild(a);a.click();a.remove();try{localStorage.setItem("gd_lastExport",Date.now())}catch(e){};toast("Файл сохранён в Загрузки")};
  A.querySelector("#imp").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());let n=0;
   if(j.app==="gym-diary"&&j.data){for(const[k,v]of Object.entries(j.data)){await LDB.doc(k).set(v);n++}toast("Импортировано записей: "+n)}
   else if(Array.isArray(j.items)){const cur=S.hist.slice();const keys=new Set(cur.map(x=>x.date+x.title));j.items.forEach(x=>{if(!keys.has(x.date+x.title)){cur.push(x);n++}});await LDB.doc("hist/all").set({items:cur});toast("История: добавлено "+n+" тренировок")}
   else{toast("Не тот формат файла");return}
   setTimeout(()=>location.reload(),900)}catch(err){toast("Ошибка импорта: "+err.message)}}}
 renderNav();loadAll();
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 </script>
 </body>
