@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, interactive-widget=resizes-content">
 <title>Дневник тренировок</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0f1115">
@@ -46,8 +46,9 @@ nav button.on{color:var(--acc)}
 .ok.on{background:var(--blue);border-color:var(--blue);color:#fff}
 .no.on{background:var(--red);border-color:var(--red);color:#fff}
 .plan{font-size:12px;color:var(--mut)}
-.sheet{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20;display:flex;align-items:flex-end}
-.sheet>div{background:var(--card);width:100%;max-height:88vh;overflow:auto;border-radius:18px 18px 0 0;padding:14px 14px 28px;max-width:640px;margin:0 auto}
+.sheet{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);background:rgba(0,0,0,.6);z-index:20;display:flex;align-items:flex-end}
+.sheet>div.tall{height:min(88vh,calc(var(--vvh,100vh) - 16px))}.sheet .stick{position:sticky;top:-14px;background:var(--card);z-index:2;margin:-14px -14px 0;padding:14px 14px 4px}
+.sheet>div{background:var(--card);width:100%;max-height:min(88vh,calc(var(--vvh,100vh) - 16px));overflow:auto;border-radius:18px 18px 0 0;padding:14px 14px 28px;max-width:640px;margin:0 auto}
 .banner{background:#3b2a0b;border:1px solid #6b4b12;color:#fcd38a;padding:8px 10px;border-radius:10px;font-size:13px;margin-bottom:10px}
 .hist{border-left:3px solid #4b5262}
 .hist.app{border-left-color:var(--acc)}
@@ -358,7 +359,8 @@ async function loadAll(){
 /* ===================== UI-утилиты ===================== */
 let stT;function setStatus(t){const el=$("#st");if(el){el.textContent=t;clearTimeout(stT);stT=setTimeout(()=>{el.textContent=""},2500)}}
 function toast(t){const d=document.createElement("div");d.textContent=t;d.style.cssText="position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#333;color:#fff;padding:8px 14px;border-radius:10px;z-index:50;font-size:14px";document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
-function sheet(html,onMount){const r=$("#sheetRoot");r.innerHTML='<div class="sheet"><div>'+html+'</div></div>';const s=r.firstChild;s.addEventListener("click",e=>{if(e.target===s)closeSheet()});onMount&&onMount(s);}
+function sheet(html,onMount,cls){const r=$("#sheetRoot");r.innerHTML='<div class="sheet"><div class="'+(cls||"")+'">'+html+'</div></div>';const s=r.firstChild;s.addEventListener("click",e=>{if(e.target===s)closeSheet()});onMount&&onMount(s);}
+(function(){const vv=window.visualViewport;if(!vv)return;const f=()=>{const r=document.documentElement.style;r.setProperty("--vvh",vv.height+"px");r.setProperty("--vvt",vv.offsetTop+"px")};vv.addEventListener("resize",f);vv.addEventListener("scroll",f);f()})();
 function closeSheet(){$("#sheetRoot").innerHTML=""}
 const TABS=[["today","🏋️","Тренировка"],["log","📒","Журнал"],["prog","📈","Прогресс"],["food","🍽️","Питание"],["more","⚙️","Ещё"]];
 function renderNav(){$("#nav").innerHTML=TABS.map(t=>`<button class="${S.tab===t[0]?"on":""}" data-t="${t[0]}"><b>${t[1]}</b>${t[2]}</button>`).join("");$("#nav").querySelectorAll("button").forEach(b=>b.onclick=()=>go(b.dataset.t))}
@@ -540,7 +542,7 @@ function rToday(){$("#ttl").textContent="Тренировка";const P=PROGRAMS[
 const normQ=t=>(t||"").toLowerCase().replace(/ё/g,"е").replace(/[^a-zа-я0-9]+/g," ").trim();
 function exMatch(v,q){const words=normQ(q).split(" ").filter(Boolean);if(!words.length)return true;
  const hay=normQ(v.n+" "+(v.m||[]).map(x=>M[x]||"").join(" "));const stem=w=>w.length>=5?w.replace(/[аеиоуыэюяйь]+$/,""):w;return words.every(w=>hay.includes(stem(w)))}
-function pickEx(cb){sheet(`<div class="ex-h"><div class="t">Выбери упражнение</div><button class="sm" id="cx">✕</button></div><input id="q" placeholder="Поиск" style="margin:8px 0"><div id="lst"></div>`,s=>{s.querySelector("#cx").onclick=closeSheet;const draw=q=>{s.querySelector("#lst").innerHTML=Object.entries(LIB).filter(([k,v])=>exMatch(v,q)).map(([k,v])=>`<div class="list-i" data-k="${k}"><b>${esc(v.n)}</b><div class="chips">${v.m.map(x=>`<span class="mchip">${M[x]}</span>`).join("")}</div></div>`).join("");s.querySelectorAll("[data-k]").forEach(d=>d.onclick=()=>{closeSheet();cb(d.dataset.k)})};draw("");s.querySelector("#q").oninput=e=>draw(e.target.value)})}
+function pickEx(cb){sheet(`<div class="stick"><div class="ex-h"><div class="t">Выбери упражнение</div><button class="sm" id="cx">✕</button></div><input id="q" type="search" enterkeyhint="search" placeholder="Поиск: название или мышца" style="margin:8px 0"></div><div id="lst"></div>`,s=>{s.querySelector("#cx").onclick=closeSheet;const draw=q=>{s.querySelector("#lst").innerHTML=Object.entries(LIB).filter(([k,v])=>exMatch(v,q)).map(([k,v])=>`<div class="list-i" data-k="${k}"><b>${esc(v.n)}</b><div class="chips">${v.m.map(x=>`<span class="mchip">${M[x]}</span>`).join("")}</div></div>`).join("");s.querySelectorAll("[data-k]").forEach(d=>d.onclick=()=>{closeSheet();cb(d.dataset.k)})};draw("");s.querySelector("#q").oninput=e=>{draw(e.target.value);s.firstChild.scrollTop=0}},"tall")}
 function gymDialog(cb){sheet(`<div class="h2">Новый зал</div><input id="gn" placeholder="Название, напр. РП Białystok"><div class="row" style="margin-top:10px"><button class="pri" id="ok">Добавить</button><button id="cn">Отмена</button></div>`,s=>{s.querySelector("#cn").onclick=()=>{closeSheet();rToday()};s.querySelector("#ok").onclick=()=>{const g=s.querySelector("#gn").value.trim();if(!g)return;if(!S.settings.gyms.includes(g))S.settings.gyms.push(g);saveSettings();closeSheet();cb(g)}})}
 /* ===================== Экран: журнал ===================== */
 function rLog(){$("#ttl").textContent="Журнал";const p=prof();
