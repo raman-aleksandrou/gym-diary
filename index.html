@@ -417,30 +417,43 @@ function sessionsFor(exId){const p=prof();const out=[];
  if(p.hist)S.hist.forEach(h=>h.ex.forEach(e=>{if(mapName(e.name)===exId){const ws=e.sets.map(s=>num(s.w)).filter(x=>x!=null);if(ws.length)out.push({date:h.date,top:Math.max(...ws),sets:e.sets,src:"hist"})}}));
  S.workouts.filter(w=>w.profile===p.id).forEach(w=>w.ex.forEach(e=>{if(e.id===exId){const done=e.sets.filter(s=>s.st!=="plan"&&num(s.w)!=null);if(done.length)out.push({date:w.date,top:Math.max(...done.map(s=>num(s.w))),sets:done,src:"app",fails:e.sets.filter(s=>s.st==="fail").length,ok:e.sets.filter(s=>s.st==="done").length})}}));
  return out.sort((a,b)=>a.date.localeCompare(b.date))}
-function lastOf(id){const app=S.workouts.filter(w=>w.profile===prof().id&&w.id!==(S.cur&&S.cur.id)).sort((a,b)=>b.date.localeCompare(a.date));
- for(const w of app){const e=w.ex.find(x=>x.id===id);if(e&&e.sets.some(s=>s.st!=="plan"))return{w,e}}return null}
-function lastText(id){const l=lastOf(id);if(!l)return"";const d=l.w.date.slice(8,10)+"."+l.w.date.slice(5,7);
- return"Прошлый раз "+d+": "+l.e.sets.filter(s=>s.st!=="plan").map(s=>(s.w||"—")+"×"+(s.r||0)+(s.st==="fail"?"✗":"")).join(", ")}
-function suggest(spec){const[id,sets,lo,hi,start,inc]=spec;
- const app=S.workouts.filter(w=>w.profile===prof().id&&w.id!==(S.cur&&S.cur.id)).sort((a,b)=>b.date.localeCompare(a.date));
- const hist=[];for(const w of app){const e=w.ex.find(x=>x.id===id);if(e&&e.sets.some(s=>s.st!=="plan"))hist.push(e);if(hist.length>=2)break}
+const KINDS={"силовая":"Силовая","памп":"Памп"},KPREV={"силовая":"по прошлой силовой","памп":"по прошлому пампу"},KLAST={"силовая":"Прошлая силовая","памп":"Прошлый памп"};
+function poolFor(id,ctx){ctx=ctx||{};const all=S.workouts.filter(w=>w.profile===prof().id&&w.id!==ctx.excl).sort((a,b)=>b.date.localeCompare(a.date));
+ const has=w=>w.ex.some(e=>e.id===id&&e.sets.some(s=>s.st!=="plan"));
+ if(ctx.kind){const same=all.filter(w=>w.kind===ctx.kind&&has(w));if(same.length)return{list:same,byKind:true}}
+ return{list:all.filter(has),byKind:false}}
+function curCtx(){return S.cur?{kind:S.cur.kind||"",excl:S.cur.id}:{}}
+function lastOf(id,ctx){const P=poolFor(id,ctx||curCtx());const w=P.list[0];return w?{w,e:w.ex.find(x=>x.id===id),byKind:P.byKind}:null}
+function lastText(id){const c=curCtx();const l=lastOf(id,c);if(!l)return"";const d=l.w.date.slice(8,10)+"."+l.w.date.slice(5,7);
+ const lbl=l.byKind?KLAST[c.kind]:"Прошлый раз";
+ return lbl+" "+d+": "+l.e.sets.filter(s=>s.st!=="plan").map(s=>(s.w||"—")+"×"+(s.r||0)+(s.st==="fail"?"✗":"")).join(", ")}
+function suggest(spec,ctx){const[id,sets,lo,hi,start,inc]=spec;
+ const P=poolFor(id,ctx||curCtx());const hist=P.list.slice(0,2).map(w=>w.ex.find(x=>x.id===id));
  if(!hist.length)return{w:start,why:start===""?"первая тренировка — подбери рабочий вес":"стартовый вес"};
+ const pre=P.byKind?KPREV[(ctx||curCtx()).kind]+": ":"";
  const last=hist[0];const ws=last.sets.filter(s=>s.st!=="plan");const done=ws.filter(s=>s.st==="done");
  const w=Math.max(...(done.length?done:ws).map(s=>num(s.w)??0))||start;
  const allTop=ws.length>=sets&&ws.every(s=>s.st==="done"&&num(s.r)>=hi);
  const wayOver=allTop&&ws.every(s=>num(s.r)>=hi+3);
  const missLo=e=>e.sets.some(s=>s.st==="fail"||(s.st==="done"&&num(s.r)<lo));
- if(wayOver&&inc)return{w:+(w+2*inc).toFixed(2),why:`+${2*inc} кг: перевыполнил — ${hi+3}+ повторов во всех подходах`};
- if(allTop&&inc)return{w:+(w+inc).toFixed(2),why:`+${inc} кг: в прошлый раз ${hi} во всех подходах`};
- if(hist.length>=2&&missLo(hist[0])&&missLo(hist[1]))return{w:+(w*0.9).toFixed(1),why:"−10%: дважды подряд не добрал повторы"};
- if(missLo(hist[0]))return{w,why:"в прошлый раз не добрал — тот же вес, добери повторы"};
- return{w,why:"тот же вес, добавь повторы"}}
+ if(wayOver&&inc)return{w:+(w+2*inc).toFixed(2),why:pre+`+${2*inc} кг: перевыполнил — ${hi+3}+ повторов во всех подходах`};
+ if(allTop&&inc)return{w:+(w+inc).toFixed(2),why:pre+`+${inc} кг: в прошлый раз ${hi} во всех подходах`};
+ if(hist.length>=2&&missLo(hist[0])&&missLo(hist[1]))return{w:+(w*0.9).toFixed(1),why:pre+"−10%: дважды подряд не добрал повторы"};
+ if(missLo(hist[0]))return{w,why:pre+"в прошлый раз не добрал — тот же вес, добери повторы"};
+ return{w,why:pre+"тот же вес, добавь повторы"}}
+const isoWeek=d=>{const t=new Date(d+"T12:00:00");t.setDate(t.getDate()+3-((t.getDay()+6)%7));const y=new Date(t.getFullYear(),0,4);return t.getFullYear()+"-"+(1+Math.round(((t-y)/864e5-3+((y.getDay()+6)%7))/7))};
+function defaultKind(){const p=prof();const app=S.workouts.filter(w=>w.profile===p.id&&w.kind).map(w=>({date:w.date,kind:w.kind}));
+ const hist=p.hist?(S.hist||[]).filter(h=>KINDS[h.kind]).map(h=>({date:h.date,kind:h.kind})):[];
+ const last=app.concat(hist).sort((a,b)=>b.date.localeCompare(a.date))[0];if(!last)return"";
+ if(isoWeek(last.date)===isoWeek(today()))return last.kind;return last.kind==="силовая"?"памп":"силовая"}
+function applyKind(w,kind){w.kind=kind;const ctx={kind,excl:w.id};
+ w.ex.forEach(e=>{if(!e.spec)return;const sg=suggest(e.spec,ctx);e.why=sg.why;e.sets.forEach(s=>{if(s.st==="plan"&&(s.w===s.pw||s.w===""||s.w==null)){s.w=sg.w}if(s.st==="plan")s.pw=sg.w})})}
 /* ===================== Экран: тренировка ===================== */
-function newWorkout(dayIdx){const P=PROGRAMS[progOf()];const d=P.days[dayIdx];
- const w={id:"w"+Date.now().toString(36),profile:prof().id,date:today(),gym:S.settings.gyms[0]||"",program:progOf(),day:dayIdx,title:d.n,ex:d.ex.map(spec=>{const sg=suggest(spec);return{id:spec[0],spec,comment:"",why:sg.why,sets:Array.from({length:spec[1]},()=>({pw:sg.w,pr:spec[3],w:sg.w,r:"",st:"plan"}))}})};
+function newWorkout(dayIdx){const P=PROGRAMS[progOf()];const d=P.days[dayIdx];const kind=defaultKind();const ctx={kind,excl:"__new"};
+ const w={id:"w"+Date.now().toString(36),profile:prof().id,date:today(),gym:S.settings.gyms[0]||"",kind,program:progOf(),day:dayIdx,title:d.n,ex:d.ex.map(spec=>{const sg=suggest(spec,ctx);return{id:spec[0],spec,comment:"",why:sg.why,sets:Array.from({length:spec[1]},()=>({pw:sg.w,pr:spec[3],w:sg.w,r:"",st:"plan"}))}})};
  S.workouts.push(w);S.cur=w;S.noAuto=false;S.settings.nextDay[prof().id]=(dayIdx+1)%P.days.length;saveSettings();saveWorkout(w);rToday()}
-function newCustom(tpl){const exs=tpl?tpl.ex.map(t=>{const spec=[t.id,t.sets,t.lo,t.hi,t.w??"",t.inc??2.5];const sg=suggest(spec);return{id:t.id,spec,comment:"",why:sg.why,sets:Array.from({length:t.sets},()=>({pw:sg.w,pr:t.hi,w:sg.w,r:"",st:"plan"}))}}):[];
- const w={id:"w"+Date.now().toString(36),profile:prof().id,date:today(),gym:S.settings.gyms[0]||"",program:tpl?"tpl":"custom",day:null,tpl:tpl?tpl.id:null,title:tpl?tpl.name:"Своя тренировка",ex:exs};
+function newCustom(tpl){const kind=defaultKind();const ctx={kind,excl:"__new"};const exs=tpl?tpl.ex.map(t=>{const spec=[t.id,t.sets,t.lo,t.hi,t.w??"",t.inc??2.5];const sg=suggest(spec,ctx);return{id:t.id,spec,comment:"",why:sg.why,sets:Array.from({length:t.sets},()=>({pw:sg.w,pr:t.hi,w:sg.w,r:"",st:"plan"}))}}):[];
+ const w={id:"w"+Date.now().toString(36),profile:prof().id,date:today(),gym:S.settings.gyms[0]||"",kind,program:tpl?"tpl":"custom",day:null,tpl:tpl?tpl.id:null,title:tpl?tpl.name:"Своя тренировка",ex:exs};
  S.workouts.push(w);S.cur=w;S.noAuto=false;saveWorkout(w);rToday();if(!tpl)setTimeout(()=>{const t=document.querySelector("#wt");t&&t.focus()},50)}
 function saveTemplate(w){const st=S.settings;st.templates=st.templates||[];
  const ex=w.ex.map(e=>{const ws=e.sets.map(s=>num(s.w)).filter(x=>x!=null);const rs=e.sets.map(s=>num(s.r)||num(s.pr)).filter(x=>x);return{id:e.id,sets:e.sets.length,lo:e.spec?e.spec[2]:(rs.length?Math.min(...rs):8),hi:e.spec?e.spec[3]:(rs.length?Math.max(...rs):12),w:ws.length?ws[0]:null,inc:e.spec?e.spec[5]:2.5}});
@@ -483,7 +496,8 @@ function rToday(){$("#ttl").textContent="Тренировка";const P=PROGRAMS[
  const w=S.cur;
  h+=`<div class="card"><div class="ex-h"><button class="sm" id="back">← Назад</button><span id="st" class="status" style="flex:1;text-align:right;align-self:center"></span></div>
  <input id="wt" value="${esc(w.title)}" placeholder="Название тренировки" style="margin-top:8px;font-weight:600">
- <div class="row" style="margin-top:8px"><input type="date" id="wd" value="${w.date}"><select id="wg">${S.settings.gyms.map(g=>`<option ${g===w.gym?"selected":""}>${esc(g)}</option>`).join("")}<option value="__new">+ Новый зал…</option></select></div></div>`;
+ <div class="row" style="margin-top:8px"><input type="date" id="wd" value="${w.date}"><select id="wg">${S.settings.gyms.map(g=>`<option ${g===w.gym?"selected":""}>${esc(g)}</option>`).join("")}<option value="__new">+ Новый зал…</option></select></div>
+ <div class="chips" id="wk" style="margin-top:8px">${Object.entries(KINDS).map(([k,n])=>`<span class="chip ${w.kind===k?"on":""}" data-kind="${k}">${n}</span>`).join("")}</div></div>`;
  h+=wellCard(w);
  w.ex.forEach((e,ei)=>{const L=LIB[e.id]||{n:e.id,m:[]};
   h+=`<div class="card" id="ex${ei}"><div class="ex-h"><div class="t">${esc(L.n)}<div class="chips" style="margin-top:4px">${L.m.map(k=>`<span class="mchip">${M[k]}</span>`).join("")}</div></div>
@@ -501,6 +515,7 @@ function rToday(){$("#ttl").textContent="Тренировка";const P=PROGRAMS[
  <div class="row"><button class="pri" id="fin">Завершить</button><button id="delW">Удалить</button></div>`;
  $("#app").innerHTML=h;const A=$("#app");const save=()=>saveWorkout(w);
  bindWell(A,w);
+ A.querySelectorAll("#wk [data-kind]").forEach(c=>c.onclick=()=>{const k=c.dataset.kind;applyKind(w,w.kind===k?"":k);save();const y=window.scrollY;rToday();window.scrollTo(0,y);toast(w.kind?"Тип: "+KINDS[w.kind]+" — веса пересчитаны "+KPREV[w.kind]:"Тип снят")});
  A.querySelector("#back").onclick=()=>{S.cur=null;S.noAuto=true;rToday();window.scrollTo(0,0)};
  A.querySelector("#wt").oninput=e=>{w.title=e.target.value;save()};
  A.querySelector("#wd").onchange=e=>{w.date=e.target.value;save()};
@@ -529,13 +544,13 @@ function pickEx(cb){sheet(`<div class="ex-h"><div class="t">Выбери упр�
 function gymDialog(cb){sheet(`<div class="h2">Новый зал</div><input id="gn" placeholder="Название, напр. РП Białystok"><div class="row" style="margin-top:10px"><button class="pri" id="ok">Добавить</button><button id="cn">Отмена</button></div>`,s=>{s.querySelector("#cn").onclick=()=>{closeSheet();rToday()};s.querySelector("#ok").onclick=()=>{const g=s.querySelector("#gn").value.trim();if(!g)return;if(!S.settings.gyms.includes(g))S.settings.gyms.push(g);saveSettings();closeSheet();cb(g)}})}
 /* ===================== Экран: журнал ===================== */
 function rLog(){$("#ttl").textContent="Журнал";const p=prof();
- const app=S.workouts.filter(w=>w.profile===p.id).map(w=>({date:w.date,title:w.title,gym:w.gym,app:true,w}));
- const hist=p.hist?S.hist.map(h=>({date:h.date,title:h.title,gym:h.gym,app:false,h})):[];
- const all=app.concat(hist).sort((a,b)=>b.date.localeCompare(a.date));
- let h=`<div class="mut" style="margin-bottom:8px">${app.length} в приложении · ${hist.length} из заметок</div>`;
+ const app=S.workouts.filter(w=>w.profile===p.id).map(w=>({date:w.date,title:w.title,gym:w.gym,kind:w.kind||"",app:true,w}));
+ const hist=p.hist?S.hist.map(h=>({date:h.date,title:h.title,gym:h.gym,kind:KINDS[h.kind]?h.kind:"",app:false,h})):[];
+ const kf=S.logKind||"";const all=app.concat(hist).filter(x=>!kf||x.kind===kf).sort((a,b)=>b.date.localeCompare(a.date));
+ let h=`<div class="chips" id="lk" style="margin-bottom:8px"><span class="chip ${!kf?"on":""}" data-kf="">Все</span>${Object.entries(KINDS).map(([k,n])=>`<span class="chip ${kf===k?"on":""}" data-kf="${k}">${n}</span>`).join("")}</div><div class="mut" style="margin-bottom:8px">${app.length} в приложении · ${hist.length} из заметок${kf?" · показано: "+all.length:""}</div>`;
  if(!all.length)h+=`<div class="card mut">Пока пусто. Начни тренировку на вкладке «Тренировка».</div>`;
- all.slice(0,150).forEach((x,i)=>{h+=`<div class="card hist ${x.app?"app":""}" data-i="${i}"><div class="ex-h"><div class="t">${esc(x.title)}</div><span class="tag">${x.app?"приложение":"заметки"}</span></div><div class="mut">${fmtD(x.date)}${x.gym?" · "+esc(x.gym):""}${(()=>{const m=wellOf(p.id,x.date);if(!m)return"";const parts=[m.mood?m.mood+"/5":"",...(m.tags||[])].filter(Boolean);return" · ❤️"+(parts.length?" "+esc(parts.join(", ")):"")})()}</div></div>`});
- $("#app").innerHTML=h;$("#app").querySelectorAll("[data-i]").forEach(c=>c.onclick=()=>{const x=all[+c.dataset.i];if(x.app){S.cur=x.w;go("today")}else histSheet(x.h)})}
+ all.slice(0,150).forEach((x,i)=>{h+=`<div class="card hist ${x.app?"app":""}" data-i="${i}"><div class="ex-h"><div class="t">${esc(x.title)}</div><span class="tag">${x.app?"приложение":"заметки"}</span></div><div class="mut">${fmtD(x.date)}${x.gym?" · "+esc(x.gym):""}${x.kind?" · "+KINDS[x.kind]:""}${(()=>{const m=wellOf(p.id,x.date);if(!m)return"";const parts=[m.mood?m.mood+"/5":"",...(m.tags||[])].filter(Boolean);return" · ❤️"+(parts.length?" "+esc(parts.join(", ")):"")})()}</div></div>`});
+ $("#app").innerHTML=h;$("#app").querySelectorAll("[data-kf]").forEach(c=>c.onclick=()=>{S.logKind=c.dataset.kf;rLog()});$("#app").querySelectorAll("[data-i]").forEach(c=>c.onclick=()=>{const x=all[+c.dataset.i];if(x.app){S.cur=x.w;go("today")}else histSheet(x.h)})}
 function histSheet(hh){sheet(`<div class="ex-h"><div class="t">${esc(hh.title)}</div><button class="sm" id="cx">✕</button></div><div class="mut">${fmtD(hh.date)} · из заметок</div>`+hh.ex.map(e=>`<div class="list-i"><b>${esc(e.name)}</b><div>${e.sets.map(s=>esc(s.w)+"×"+s.r).join(", ")}</div></div>`).join(""),s=>s.querySelector("#cx").onclick=closeSheet)}
 /* ===================== Экран: прогресс и анализ ===================== */
 function chart(pts){if(pts.length<2)return`<div class="mut">Мало данных для графика.</div>`;
